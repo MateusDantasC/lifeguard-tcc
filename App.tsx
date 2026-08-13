@@ -1,11 +1,34 @@
-import { PaperProvider } from 'react-native-paper';
-import { theme } from './src/theme/theme';
+import { useCallback } from 'react';
+import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
+import {
+  AtkinsonHyperlegible_400Regular,
+  AtkinsonHyperlegible_700Bold,
+} from '@expo-google-fonts/atkinson-hyperlegible';
 import AppNavigator from './src/navigation/AppNavigator';
 
+SplashScreen.preventAutoHideAsync();
+
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Fraunces_600SemiBold,
+    AtkinsonHyperlegible_400Regular,
+    AtkinsonHyperlegible_700Bold,
+  });
+
+  const onLayout = useCallback(async () => {
+    if (fontsLoaded) await SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <PaperProvider theme={theme}>
-      <AppNavigator />
-    </PaperProvider>
+    <SafeAreaProvider>
+      <View style={{ flex: 1 }} onLayout={onLayout}>
+        <AppNavigator />
+      </View>
+    </SafeAreaProvider>
   );
 }
