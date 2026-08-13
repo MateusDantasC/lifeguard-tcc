@@ -15,21 +15,30 @@ const idososMock = [
   { id: '2', nome: 'José Oliveira', status: 'atencao' as const, batimento: 112, temperatura: 37.8 },
 ];
 
-export default function HomeCuidadorScreen({}: Props) {
+export default function HomeCuidadorScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.saudacao}>Olá, {user?.nome ?? 'Cuidador'}</Text>
-          <Text style={styles.subSaudacao}>{idososMock.length} idoso(s) vinculado(s)</Text>
+          <View>
+            <Text style={styles.saudacao}>Olá, {user?.nome ?? 'Cuidador'}</Text>
+            <Text style={styles.subSaudacao}>{idososMock.length} idoso(s) vinculado(s)</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate('Alertas')} hitSlop={10}>
+            <MaterialCommunityIcons name="bell-outline" size={26} color={colors.ink} />
+          </Pressable>
         </View>
 
         <Text style={styles.sectionTitle}>Meus idosos</Text>
 
         {idososMock.map((idoso) => (
-          <Pressable key={idoso.id} style={styles.idosoCard}>
+          <Pressable
+            key={idoso.id}
+            style={styles.idosoCard}
+            onPress={() => navigation.navigate('DetalheIdoso', { idosoId: idoso.id, nome: idoso.nome })}
+          >
             <View style={styles.avatar}>
               <Text style={styles.avatarLabel}>{idoso.nome.charAt(0)}</Text>
             </View>
@@ -42,7 +51,7 @@ export default function HomeCuidadorScreen({}: Props) {
         ))}
       </ScrollView>
 
-      <Pressable style={styles.fab}>
+      <Pressable style={styles.fab} onPress={() => navigation.navigate('VincularIdoso')}>
         <MaterialCommunityIcons name="plus" size={20} color={colors.sand} />
         <Text style={styles.fabLabel}>Vincular idoso</Text>
       </Pressable>

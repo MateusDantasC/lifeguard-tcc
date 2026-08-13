@@ -13,15 +13,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
 // TODO: substituir por dados reais (GET /leituras/atual/:idosoId)
 const leituraMock = { batimento: 78, temperatura: 36.5, status: 'normal' as const, ultimaAtualizacao: 'há 2 minutos' };
 
-const acessos = [
-  { icon: 'chart-line' as const, label: 'Histórico', onPress: () => navigation.navigate('Historico') },
-  { icon: 'devices' as const, label: 'Meu dispositivo', onPress: () => {} },
-  { icon: 'account-group' as const, label: 'Cuidadores', onPress: () => {} },
-  { icon: 'cog' as const, label: 'Config. de alerta', onPress: () => {} },
-];
-
 export default function HomeIdosoScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
+
+  const acessos = [
+    { icon: 'chart-line' as const, label: 'Histórico', onPress: () => navigation.navigate('Historico') },
+    { icon: 'devices' as const, label: 'Meu dispositivo', onPress: () => navigation.navigate('MeuDispositivo') },
+    { icon: 'account-group' as const, label: 'Cuidadores', onPress: () => navigation.navigate('Cuidadores') },
+    { icon: 'cog' as const, label: 'Config. de alerta', onPress: () => {} },
+  ];
 
   return (
     <SafeAreaView style={styles.safe}>

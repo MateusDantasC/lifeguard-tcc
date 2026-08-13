@@ -31,14 +31,15 @@ const picosMock = [
   { id: '3', tipo: 'batimento' as const, valor: 122, horario: 'Ontem, 09:47' },
 ];
 
-export default function HistoricoScreen({ navigation }: Props) {
+export default function HistoricoScreen({ navigation, route }: Props) {
+  const nomeIdoso = route.params?.nome;
   const [metrica, setMetrica] = useState<Metrica>('batimento');
   const pontos = useMemo(() => gerarPontosMock(metrica), [metrica]);
   const unidade = metrica === 'batimento' ? 'bpm' : '°C';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BackHeader title="Histórico" onBack={() => navigation.goBack()} />
+      <BackHeader title={nomeIdoso ? `Histórico de ${nomeIdoso}` : 'Histórico'} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.container}>
         <SegmentedToggle
