@@ -6,37 +6,37 @@ import type { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { colors, fonts, radii } from '../../theme/theme';
 import StatusPill from '../../components/StatusPill';
+import HomeHeader from '../../components/HomeHeader';
+import SectionHeader from '../../components/SectionHeader';
+import { useMonitoringStore } from '../../store/monitoringStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeCuidador'>;
 
-// TODO: substituir por dados reais (GET /idosos-vinculados/:cuidadorId)
-const idososMock = [
-  { id: '1', nome: 'Maria Silva', status: 'normal' as const, batimento: 76, temperatura: 36.4 },
-  { id: '2', nome: 'José Oliveira', status: 'atencao' as const, batimento: 112, temperatura: 37.8 },
-];
-
 export default function HomeCuidadorScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
+  // TODO: substituir por dados reais (GET /idosos-vinculados/:cuidadorId)
+  const idosos = useMonitoringStore((state) => state.elders);
+  const alertCount = useMonitoringStore((state) => state.alerts.filter((alert) => alert.status === 'novo').length);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.saudacao}>Olá, {user?.nome ?? 'Cuidador'}</Text>
-            <Text style={styles.subSaudacao}>{idososMock.length} idoso(s) vinculado(s)</Text>
-          </View>
-          <Pressable onPress={() => navigation.navigate('Alertas')} hitSlop={10}>
-            <MaterialCommunityIcons name="bell-outline" size={26} color={colors.ink} />
-          </Pressable>
-        </View>
+        <HomeHeader
+          title={`Olá, ${(user?.nome ?? 'Cuidador').split(' ')[0]}`}
+          subtitle={`${idosos.length} pessoas sob seus cuidados`}
+          onProfile={() => navigation.navigate('Perfil')}
+          onNotifications={() => navigation.navigate('Alertas')}
+          notificationCount={alertCount}
+        />
 
-        <Text style={styles.sectionTitle}>Meus idosos</Text>
+        <SectionHeader title="Pessoas acompanhadas" actionLabel="Ver alertas" onAction={() => navigation.navigate('Alertas')} />
 
-        {idososMock.map((idoso) => (
+        {idosos.map((idoso) => (
           <Pressable
             key={idoso.id}
-            style={styles.idosoCard}
+            accessibilityRole="button"
+            accessibilityLabel={`${idoso.nome}, status ${idoso.status}, ${idoso.batimento} batimentos por minuto, ${idoso.temperatura} graus`}
+            style={({ pressed }) => [styles.idosoCard, pressed && styles.pressed]}
             onPress={() => navigation.navigate('DetalheIdoso', { idosoId: idoso.id, nome: idoso.nome })}
           >
             <View style={styles.avatar}>
@@ -47,11 +47,12 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
               <Text style={styles.idosoLeitura}>{idoso.batimento} bpm · {idoso.temperatura}°C</Text>
             </View>
             <StatusPill status={idoso.status} />
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
           </Pressable>
         ))}
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => navigation.navigate('VincularIdoso')}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Vincular idoso" style={({ pressed }) => [styles.fab, pressed && styles.pressed]} onPress={() => navigation.navigate('VincularIdoso')}>
         <MaterialCommunityIcons name="plus" size={20} color={colors.sand} />
         <Text style={styles.fabLabel}>Vincular idoso</Text>
       </Pressable>
@@ -62,16 +63,13 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
   container: { padding: 20, paddingBottom: 100 },
-  header: { marginBottom: 20 },
-  saudacao: { fontFamily: fonts.display, fontSize: 22, color: colors.ink },
-  subSaudacao: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, marginBottom: 12 },
-  idosoCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.cardBg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12 },
+  idosoCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.cardBg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12, minHeight: 82 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   avatarLabel: { fontFamily: fonts.bodyBold, color: colors.sand, fontSize: 16 },
   idosoInfo: { flex: 1 },
   idosoNome: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
-  idosoLeitura: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  idosoLeitura: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 3 },
   fab: { position: 'absolute', right: 16, bottom: 24, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.ink, borderRadius: radii.pill, paddingHorizontal: 20, height: 52 },
   fabLabel: { fontFamily: fonts.bodyBold, color: colors.sand, fontSize: 14 },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
 });

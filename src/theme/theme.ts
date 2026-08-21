@@ -16,6 +16,12 @@ export const colors = {
   textSecondary: '#5B6B6B',
   border: 'rgba(27,58,63,0.18)',
   borderStrong: 'rgba(27,58,63,0.25)',
+  inkSoft: '#31565B',
+  coralSoft: '#FCE8DF',
+  white: '#FFFFFF',
+  transparent: 'transparent',
+  overlay: 'rgba(27,58,63,0.55)',
+  disabled: '#A9B2B0',
 };
 
 export const fonts = {
@@ -24,8 +30,18 @@ export const fonts = {
   bodyBold: 'AtkinsonHyperlegible_700Bold',
 };
 
-export const radii = { sm: 10, md: 14, lg: 20, pill: 999 };
-export const spacing = { xs: 4, sm: 8, md: 14, lg: 20, xl: 28 };
+export const radii = { sm: 10, md: 14, lg: 20, xl: 28, pill: 999 };
+export const spacing = { xs: 4, sm: 8, md: 14, lg: 20, xl: 28, xxl: 36 };
+export const touchTarget = 48;
+
+export const typography = {
+  displayLarge: 34,
+  displayMedium: 28,
+  title: 22,
+  body: 16,
+  bodySmall: 14,
+  caption: 13,
+};
 
 export type StatusKey = 'normal' | 'atencao' | 'alerta';
 

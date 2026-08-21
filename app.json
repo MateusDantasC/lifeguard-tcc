@@ -1,33 +1,38 @@
 {
   "expo": {
-    "name": "lifeguard-tcc",
+    "name": "LifeGuard",
     "slug": "lifeguard-tcc",
+    "scheme": "lifeguard",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/lifeguard-mark.png",
+        "backgroundColor": "#1B3A3F"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/lifeguard-icon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F6F1E7",
+          "image": "./assets/lifeguard-mark.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ]
     ]
   }
 }

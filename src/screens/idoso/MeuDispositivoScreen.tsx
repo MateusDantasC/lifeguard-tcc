@@ -1,12 +1,13 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
-import { colors, fonts, radii } from '../../theme/theme';
+import { colors, fonts } from '../../theme/theme';
 import BackHeader from '../../components/BackHeader';
 import Card from '../../components/Card';
 import AppButton from '../../components/AppButton';
+import InlineNotice from '../../components/InlineNotice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeuDispositivo'>;
 
@@ -20,11 +21,6 @@ const dispositivoMock = {
 
 export default function MeuDispositivoScreen({ navigation }: Props) {
   const { conectado } = dispositivoMock;
-
-  function handleParear() {
-    // TODO: abrir fluxo real de pareamento (ler QR code ou digitar código do ESP32)
-    Alert.alert('Parear dispositivo', 'Fluxo de pareamento ainda não implementado.');
-  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -43,13 +39,15 @@ export default function MeuDispositivoScreen({ navigation }: Props) {
           />
         </Card>
 
+        <InlineNotice tone={conectado ? 'success' : 'danger'} message={conectado ? 'Seu dispositivo está enviando leituras normalmente.' : 'As leituras podem estar desatualizadas. Verifique o dispositivo.'} />
+
         <Card style={styles.infoCard}>
           <InfoRow label="Nome" value={dispositivoMock.nome} />
           <InfoRow label="Código do hardware" value={dispositivoMock.codigoHardware} />
           <InfoRow label="Última sincronização" value={dispositivoMock.ultimaSincronizacao} last />
         </Card>
 
-        <AppButton label="Parear novo dispositivo" onPress={handleParear} style={{ marginTop: 8 }} />
+        <AppButton label="Parear novo dispositivo" icon="link-variant" variant="secondary" onPress={() => navigation.navigate('ParearDispositivo')} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -71,9 +69,9 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   statusLabel: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
-  infoCard: { marginBottom: 20 },
+  infoCard: { marginVertical: 16 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
   infoRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  infoLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
-  infoValue: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
+  infoLabel: { flex: 1, fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
+  infoValue: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, textAlign: 'right' },
 });

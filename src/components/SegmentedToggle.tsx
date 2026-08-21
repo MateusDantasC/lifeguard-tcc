@@ -10,7 +10,13 @@ export default function SegmentedToggle<T extends string>({ value, onChange, opt
       {options.map((opt) => {
         const active = opt.value === value;
         return (
-          <Pressable key={opt.value} onPress={() => onChange(opt.value)} style={[styles.option, active && styles.optionActive]}>
+          <Pressable
+            key={opt.value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            onPress={() => onChange(opt.value)}
+            style={({ pressed }) => [styles.option, active && styles.optionActive, pressed && styles.pressed]}
+          >
             <Text style={[styles.label, active && styles.labelActive]}>{opt.label}</Text>
           </Pressable>
         );
@@ -21,8 +27,9 @@ export default function SegmentedToggle<T extends string>({ value, onChange, opt
 
 const styles = StyleSheet.create({
   wrapper: { flexDirection: 'row', backgroundColor: colors.cardBg, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, padding: 4, marginBottom: 18 },
-  option: { flex: 1, paddingVertical: 10, borderRadius: radii.sm, alignItems: 'center' },
+  option: { flex: 1, minHeight: 46, paddingHorizontal: 8, borderRadius: radii.sm, alignItems: 'center', justifyContent: 'center' },
   optionActive: { backgroundColor: colors.ink },
-  label: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  pressed: { opacity: 0.82 },
+  label: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
   labelActive: { fontFamily: fonts.bodyBold, color: colors.sand },
 });

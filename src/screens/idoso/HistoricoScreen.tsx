@@ -36,6 +36,9 @@ export default function HistoricoScreen({ navigation, route }: Props) {
   const [metrica, setMetrica] = useState<Metrica>('batimento');
   const pontos = useMemo(() => gerarPontosMock(metrica), [metrica]);
   const unidade = metrica === 'batimento' ? 'bpm' : '°C';
+  const picosFiltrados = picosMock.filter((pico) => pico.tipo === metrica);
+  const values = pontos.map((point) => point.y);
+  const media = (values.reduce((total, value) => total + value, 0) / values.length).toFixed(metrica === 'batimento' ? 0 : 1);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -52,7 +55,10 @@ export default function HistoricoScreen({ navigation, route }: Props) {
         />
 
         <Card style={styles.chartCard}>
-          <Text style={styles.chartLabel}>Últimas 24 horas</Text>
+          <View style={styles.chartHeader}>
+            <View><Text style={styles.chartLabel}>Média nas últimas 24 horas</Text><Text style={styles.average}>{media} <Text style={styles.unit}>{unidade}</Text></Text></View>
+            <View style={styles.range}><Text style={styles.rangeText}>mín. {Math.min(...values)} · máx. {Math.max(...values)}</Text></View>
+          </View>
           <VictoryChart height={200} padding={{ top: 10, bottom: 30, left: 40, right: 20 }}>
             <VictoryAxis
               style={{
@@ -81,7 +87,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
 
         <Text style={styles.sectionTitle}>Picos registrados</Text>
 
-        {picosMock.map((pico) => (
+        {picosFiltrados.map((pico) => (
           <Card key={pico.id} style={styles.picoCard}>
             <View style={styles.picoIcon}>
               <MaterialCommunityIcons
@@ -107,11 +113,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
   container: { paddingHorizontal: 20, paddingBottom: 40 },
   chartCard: { marginBottom: 24, paddingBottom: 4 },
-  chartLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginBottom: 4 },
-  sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, marginBottom: 12 },
+  chartHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 },
+  chartLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  average: { fontFamily: fonts.display, fontSize: 28, color: colors.ink, marginTop: 3 },
+  unit: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
+  range: { backgroundColor: colors.sand, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 6 },
+  rangeText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+  sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink, marginBottom: 12 },
   picoCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingVertical: 14 },
   picoIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.sand, alignItems: 'center', justifyContent: 'center' },
   picoInfo: { flex: 1 },
-  picoValor: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },
-  picoHorario: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  picoValor: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
+  picoHorario: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 2 },
 });

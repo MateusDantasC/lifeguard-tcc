@@ -5,23 +5,30 @@ import { colors, fonts } from '../theme/theme';
 type Props = {
   title: string;
   onBack: () => void;
+  rightIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  onRightPress?: () => void;
+  rightLabel?: string;
 };
 
-export default function BackHeader({ title, onBack }: Props) {
+export default function BackHeader({ title, onBack, rightIcon, onRightPress, rightLabel }: Props) {
   return (
     <View style={styles.wrapper}>
-      <Pressable onPress={onBack} hitSlop={12} style={styles.backBtn}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Voltar" onPress={onBack} hitSlop={8} style={styles.actionBtn}>
         <MaterialCommunityIcons name="arrow-left" size={24} color={colors.ink} />
       </Pressable>
-      <Text style={styles.title}>{title}</Text>
-      <View style={styles.spacer} />
+      <Text numberOfLines={1} style={styles.title}>{title}</Text>
+      {rightIcon && onRightPress ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={rightLabel ?? 'Ação'} onPress={onRightPress} hitSlop={8} style={styles.actionBtn}>
+          <MaterialCommunityIcons name={rightIcon} size={24} color={colors.ink} />
+        </Pressable>
+      ) : <View style={styles.spacer} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontFamily: fonts.display, fontSize: 20, color: colors.ink, textAlign: 'center' },
-  spacer: { width: 40 },
+  wrapper: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 6, paddingBottom: 14 },
+  actionBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontFamily: fonts.display, fontSize: 21, color: colors.ink, textAlign: 'center', paddingHorizontal: 4 },
+  spacer: { width: 48 },
 });

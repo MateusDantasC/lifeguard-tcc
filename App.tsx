@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useFonts, Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import {
   AtkinsonHyperlegible_400Regular,
@@ -10,6 +11,7 @@ import {
 import AppNavigator from './src/navigation/AppNavigator';
 
 SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 450, fade: true });
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -27,6 +29,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }} onLayout={onLayout}>
+        <StatusBar style="dark" />
         <AppNavigator />
       </View>
     </SafeAreaProvider>
