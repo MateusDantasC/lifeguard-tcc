@@ -9,9 +9,11 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mdantasc.lifeguard"
     },
     "android": {
+      "package": "com.mdantasc.lifeguard",
       "adaptiveIcon": {
         "foregroundImage": "./assets/lifeguard-mark.png",
         "backgroundColor": "#1B3A3F"
@@ -33,6 +35,18 @@
           "resizeMode": "contain"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "92c95f11-213c-4abb-80d7-530ac17bfcdb"
+      }
+    },
+    "owner": "mdantasc",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/92c95f11-213c-4abb-80d7-530ac17bfcdb"
+    }
   }
 }
