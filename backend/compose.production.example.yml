@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lifeguard
+      POSTGRES_USER: lifeguard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - lifeguard_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeguard -d lifeguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://lifeguard:${POSTGRES_PASSWORD}@postgres:5432/lifeguard?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3333
+      APP_ORIGIN: ${APP_ORIGIN:-*}
+    ports:
+      - "3333:3333"
+
+volumes:
+  lifeguard_postgres_data:

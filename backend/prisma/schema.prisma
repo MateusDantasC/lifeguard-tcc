@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserType {
+  ELDER
+  CAREGIVER
+}
+
+enum LinkStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+enum ReadingSource {
+  DEVICE
+  SIMULATOR
+  MANUAL
+}
+
+enum SignalQuality {
+  GOOD
+  FAIR
+  POOR
+  NO_CONTACT
+  UNKNOWN
+}
+
+enum AlertType {
+  HEART_RATE
+  TEMPERATURE
+  DEVICE_OFFLINE
+  SIGNAL_LOST
+}
+
+enum AlertStatus {
+  NEW
+  SEEN
+  RESOLVED
+}
+
+enum AggregationPeriod {
+  HOUR
+  DAY
+}
+
+model User {
+  id                     String               @id @default(uuid()) @db.Uuid
+  name                   String
+  email                  String               @unique
+  phone                  String?
+  passwordHash           String
+  type                   UserType
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  elderProfile           ElderProfile?
+  devices                Device[]
+  caregiverLinks         CaregiverElderLink[] @relation("CaregiverLinks")
+  elderLinks             CaregiverElderLink[] @relation("ElderLinks")
+  alertLimits            AlertLimit?          @relation("ElderAlertLimit")
+  limitsDefined          AlertLimit[]         @relation("LimitsDefinedBy")
+  alerts                 Alert[]
+  notificationRecipients NotificationSent[]   @relation("NotificationRecipient")
+  pushTokens             PushToken[]
+  linkCodes              ElderLinkCode[]
+}
+
+model ElderProfile {
+  userId                String    @id @db.Uuid
+  birthDate             DateTime?
+  medicalConditions     String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CaregiverElderLink {
+  id          String     @id @default(uuid()) @db.Uuid
+  caregiverId String     @db.Uuid
+  elderId     String     @db.Uuid
+  status      LinkStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  caregiver   User       @relation("CaregiverLinks", fields: [caregiverId], references: [id], onDelete: Cascade)
+  elder       User       @relation("ElderLinks", fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@unique([caregiverId, elderId])
+  @@index([elderId, status])
+}
+
+model ElderLinkCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  elderId   String    @db.Uuid
+  code      String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  elder     User      @relation(fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@index([elderId, expiresAt])
+}
+
+model Device {
+  id           String              @id @default(uuid()) @db.Uuid
+  hardwareCode String              @unique
+  elderId      String              @db.Uuid
+  nickname     String
+  active       Boolean             @default(true)
+  pairedAt     DateTime            @default(now())
+  lastSeenAt   DateTime?
+  elder        User                @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  readings     Reading[]
+  aggregates   AggregatedReading[]
+
+  @@index([elderId, active])
+}
+
+model Reading {
+  id              BigInt        @id @default(autoincrement())
+  deviceId        String        @db.Uuid
+  heartRate       Int?
+  temperature     Float?
+  timestamp       DateTime      @default(now())
+  source          ReadingSource @default(DEVICE)
+  signalQuality   SignalQuality @default(UNKNOWN)
+  contactDetected Boolean       @default(true)
+  valid           Boolean       @default(true)
+  invalidReason   String?
+  device          Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp(sort: Desc)])
+  @@index([timestamp])
+}
+
+model AggregatedReading {
+  id                 BigInt            @id @default(autoincrement())
+  deviceId           String            @db.Uuid
+  period             AggregationPeriod
+  periodStart        DateTime
+  sampleCount        Int
+  heartRateAverage   Float?
+  heartRateMinimum   Int?
+  heartRateMaximum   Int?
+  temperatureAverage Float?
+  temperatureMinimum Float?
+  temperatureMaximum Float?
+  device             Device            @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, period, periodStart])
+  @@index([periodStart])
+}
+
+model AlertLimit {
+  id                 String   @id @default(uuid()) @db.Uuid
+  elderId            String   @unique @db.Uuid
+  heartRateMinimum   Int      @default(50)
+  heartRateMaximum   Int      @default(120)
+  temperatureMinimum Float    @default(35.5)
+  temperatureMaximum Float    @default(37.8)
+  definedById        String?  @db.Uuid
+  updatedAt          DateTime @updatedAt
+  elder              User     @relation("ElderAlertLimit", fields: [elderId], references: [id], onDelete: Cascade)
+  definedBy          User?    @relation("LimitsDefinedBy", fields: [definedById], references: [id], onDelete: SetNull)
+}
+
+model Alert {
+  id            String             @id @default(uuid()) @db.Uuid
+  elderId       String             @db.Uuid
+  type          AlertType
+  measuredValue Float?
+  message       String
+  timestamp     DateTime           @default(now())
+  status        AlertStatus        @default(NEW)
+  resolvedAt    DateTime?
+  elder         User               @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  notifications NotificationSent[]
+
+  @@index([elderId, timestamp(sort: Desc)])
+  @@index([status, timestamp(sort: Desc)])
+}
+
+model NotificationSent {
+  id          String    @id @default(uuid()) @db.Uuid
+  alertId     String    @db.Uuid
+  recipientId String    @db.Uuid
+  sentAt      DateTime  @default(now())
+  readAt      DateTime?
+  providerId  String?
+  alert       Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  recipient   User      @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt])
+}
+
+model PushToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  platform  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
