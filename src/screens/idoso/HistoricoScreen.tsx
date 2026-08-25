@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryScatter } from 'victory-native';
@@ -9,42 +9,58 @@ import { colors, fonts, radii } from '../../theme/theme';
 import BackHeader from '../../components/BackHeader';
 import SegmentedToggle from '../../components/SegmentedToggle';
 import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
+import InlineNotice from '../../components/InlineNotice';
+import { useAuthStore } from '../../store/authStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { apiRequest, ApiError, formatDateTime } from '../../services/api';
+import { fetchReadings, type Reading } from '../../services/monitoring';
+import type { MonitoringAlert } from '../../store/monitoringStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Historico'>;
 
 type Metrica = 'batimento' | 'temperatura';
 
-// TODO: substituir por dados reais (GET /leituras/historico/:idosoId?periodo=24h)
-function gerarPontosMock(metrica: Metrica) {
-  const base = metrica === 'batimento' ? 76 : 36.4;
-  const variacao = metrica === 'batimento' ? 18 : 0.6;
-  return Array.from({ length: 12 }, (_, i) => ({
-    x: i,
-    y: Number((base + Math.sin(i / 1.5) * variacao + (i === 7 ? variacao * 1.8 : 0)).toFixed(1)),
-  }));
-}
-
-// TODO: substituir por dados reais (GET /alertas/idoso/:idosoId)
-const picosMock = [
-  { id: '1', tipo: 'batimento' as const, valor: 128, horario: 'Hoje, 14:32' },
-  { id: '2', tipo: 'temperatura' as const, valor: 38.1, horario: 'Ontem, 21:10' },
-  { id: '3', tipo: 'batimento' as const, valor: 122, horario: 'Ontem, 09:47' },
-];
-
 export default function HistoricoScreen({ navigation, route }: Props) {
+  const user = useAuthStore((state) => state.user);
+  const elderId = route.params?.idosoId ?? user?.id;
   const nomeIdoso = route.params?.nome;
   const [metrica, setMetrica] = useState<Metrica>('batimento');
-  const pontos = useMemo(() => gerarPontosMock(metrica), [metrica]);
+  const [leituras, setLeituras] = useState<Reading[]>([]);
+  const [picos, setPicos] = useState<MonitoringAlert[]>([]);
+  const [erro, setErro] = useState('');
+
+  useFocusEffect(useCallback(() => {
+    if (!elderId) return;
+    void Promise.all([
+      fetchReadings(elderId, 100),
+      apiRequest<{ alertas: Array<Omit<MonitoringAlert, 'horario'> & { horario: string }> }>('/alertas'),
+    ]).then(([readings, alerts]) => {
+      setLeituras(readings);
+      setPicos(alerts.alertas.filter((alert) => alert.idosoId === elderId).map((alert) => ({ ...alert, horario: formatDateTime(alert.horario) })));
+      setErro('');
+    }).catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar o histórico.'));
+  }, [elderId]));
+
+  const pontos = useMemo(() => leituras
+    .filter((reading) => reading.valida && (metrica === 'batimento' ? reading.batimento !== null : reading.temperatura !== null))
+    .slice()
+    .reverse()
+    .map((reading, index) => ({
+      x: index,
+      y: metrica === 'batimento' ? reading.batimento! : reading.temperatura!,
+    })), [leituras, metrica]);
   const unidade = metrica === 'batimento' ? 'bpm' : '°C';
-  const picosFiltrados = picosMock.filter((pico) => pico.tipo === metrica);
+  const picosFiltrados = picos.filter((pico) => pico.tipo === metrica);
   const values = pontos.map((point) => point.y);
-  const media = (values.reduce((total, value) => total + value, 0) / values.length).toFixed(metrica === 'batimento' ? 0 : 1);
+  const media = values.length ? (values.reduce((total, value) => total + value, 0) / values.length).toFixed(metrica === 'batimento' ? 0 : 1) : '--';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title={nomeIdoso ? `Histórico de ${nomeIdoso}` : 'Histórico'} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.container}>
+        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
         <SegmentedToggle
           value={metrica}
           onChange={setMetrica}
@@ -57,7 +73,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
         <Card style={styles.chartCard}>
           <View style={styles.chartHeader}>
             <View><Text style={styles.chartLabel}>Média nas últimas 24 horas</Text><Text style={styles.average}>{media} <Text style={styles.unit}>{unidade}</Text></Text></View>
-            <View style={styles.range}><Text style={styles.rangeText}>mín. {Math.min(...values)} · máx. {Math.max(...values)}</Text></View>
+            <View style={styles.range}><Text style={styles.rangeText}>{values.length ? `mín. ${Math.min(...values)} · máx. ${Math.max(...values)}` : 'sem dados'}</Text></View>
           </View>
           <VictoryChart height={200} padding={{ top: 10, bottom: 30, left: 40, right: 20 }}>
             <VictoryAxis
@@ -66,7 +82,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
                 tickLabels: { fontFamily: fonts.body, fontSize: 10, fill: colors.textSecondary },
                 grid: { stroke: 'transparent' },
               }}
-              tickFormat={(t) => `${t}h`}
+              tickFormat={(t) => `${t + 1}`}
             />
             <VictoryAxis
               dependentAxis
@@ -87,7 +103,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
 
         <Text style={styles.sectionTitle}>Picos registrados</Text>
 
-        {picosFiltrados.map((pico) => (
+        {picosFiltrados.length === 0 ? <EmptyState icon="chart-line" title="Nenhum pico registrado" message="Os alertas reais aparecerão aqui quando uma leitura válida ultrapassar os limites." /> : picosFiltrados.map((pico) => (
           <Card key={pico.id} style={styles.picoCard}>
             <View style={styles.picoIcon}>
               <MaterialCommunityIcons

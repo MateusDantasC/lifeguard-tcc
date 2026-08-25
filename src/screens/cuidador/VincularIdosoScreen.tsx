@@ -10,25 +10,38 @@ import AppTextInput from '../../components/AppTextInput';
 import AppButton from '../../components/AppButton';
 import InlineNotice from '../../components/InlineNotice';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { apiRequest, ApiError } from '../../services/api';
+import { fetchCaregiverDashboard } from '../../services/monitoring';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'VincularIdoso'>;
 
 export default function VincularIdosoScreen({ navigation }: Props) {
   const [codigo, setCodigo] = useState('');
   const [erro, setErro] = useState('');
-  const addElderByCode = useMonitoringStore((state) => state.addElderByCode);
+  const setElders = useMonitoringStore((state) => state.setElders);
+  const setAlerts = useMonitoringStore((state) => state.setAlerts);
+  const [loading, setLoading] = useState(false);
 
-  function handleVincular() {
+  async function handleVincular() {
     if (!/^\d{6}$/.test(codigo)) {
       setErro('Digite os 6 números do código de vínculo.');
       return;
     }
-    // TODO: validar o código no backend (POST /vinculos/confirmar)
-    setErro('');
-    const added = addElderByCode(codigo);
-    Alert.alert(added ? 'Vínculo concluído' : 'Vínculo já existente', added ? 'Antônio Santos foi adicionado à sua lista neste protótipo.' : 'Este código já foi utilizado durante a sessão.', [
-      { text: 'Continuar', onPress: () => navigation.goBack() },
-    ]);
+    setLoading(true);
+    try {
+      const response = await apiRequest<{ vinculo: { usuario: { nome: string } } }>('/vinculos', { method: 'POST', body: JSON.stringify({ codigo }) });
+      const dashboard = await fetchCaregiverDashboard();
+      setElders(dashboard.elders);
+      setAlerts(dashboard.alerts);
+      setErro('');
+      Alert.alert('Vínculo concluído', `${response.vinculo.usuario.nome} foi adicionado à sua lista.`, [
+        { text: 'Continuar', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível concluir o vínculo.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleQrCode() {
@@ -61,7 +74,7 @@ export default function VincularIdosoScreen({ navigation }: Props) {
           required
         />
 
-        <AppButton label="Confirmar vínculo" icon="link-variant" onPress={handleVincular} />
+        <AppButton label="Confirmar vínculo" icon="link-variant" onPress={handleVincular} loading={loading} />
 
         <View style={styles.divider}>
           <View style={styles.linha} />

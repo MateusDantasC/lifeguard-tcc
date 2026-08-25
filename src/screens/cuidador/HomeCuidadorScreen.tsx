@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,18 +10,45 @@ import StatusPill from '../../components/StatusPill';
 import HomeHeader from '../../components/HomeHeader';
 import SectionHeader from '../../components/SectionHeader';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchCaregiverDashboard } from '../../services/monitoring';
+import { ApiError } from '../../services/api';
+import InlineNotice from '../../components/InlineNotice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeCuidador'>;
 
 export default function HomeCuidadorScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
-  // TODO: substituir por dados reais (GET /idosos-vinculados/:cuidadorId)
   const idosos = useMonitoringStore((state) => state.elders);
   const alertCount = useMonitoringStore((state) => state.alerts.filter((alert) => alert.status === 'novo').length);
+  const setElders = useMonitoringStore((state) => state.setElders);
+  const setAlerts = useMonitoringStore((state) => state.setAlerts);
+  const [refreshing, setRefreshing] = useState(false);
+  const [erro, setErro] = useState('');
+
+  const refresh = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true);
+    try {
+      const dashboard = await fetchCaregiverDashboard();
+      setElders(dashboard.elders);
+      setAlerts(dashboard.alerts);
+      setErro('');
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setAlerts, setElders]);
+
+  useFocusEffect(useCallback(() => {
+    void refresh(true);
+    const interval = setInterval(() => void refresh(), 5_000);
+    return () => clearInterval(interval);
+  }, [refresh]));
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
         <HomeHeader
           title={`Olá, ${(user?.nome ?? 'Cuidador').split(' ')[0]}`}
           subtitle={`${idosos.length} pessoas sob seus cuidados`}
@@ -29,13 +57,15 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
           notificationCount={alertCount}
         />
 
+        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+
         <SectionHeader title="Pessoas acompanhadas" actionLabel="Ver alertas" onAction={() => navigation.navigate('Alertas')} />
 
         {idosos.map((idoso) => (
           <Pressable
             key={idoso.id}
             accessibilityRole="button"
-            accessibilityLabel={`${idoso.nome}, status ${idoso.status}, ${idoso.batimento} batimentos por minuto, ${idoso.temperatura} graus`}
+            accessibilityLabel={`${idoso.nome}, status ${idoso.status}, ${idoso.batimento ?? 'sem leitura'} batimentos por minuto, ${idoso.temperatura ?? 'sem leitura'} graus`}
             style={({ pressed }) => [styles.idosoCard, pressed && styles.pressed]}
             onPress={() => navigation.navigate('DetalheIdoso', { idosoId: idoso.id, nome: idoso.nome })}
           >
@@ -44,7 +74,7 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
             </View>
             <View style={styles.idosoInfo}>
               <Text style={styles.idosoNome}>{idoso.nome}</Text>
-              <Text style={styles.idosoLeitura}>{idoso.batimento} bpm · {idoso.temperatura}°C</Text>
+              <Text style={styles.idosoLeitura}>{idoso.batimento ?? '--'} bpm · {idoso.temperatura ?? '--'}°C</Text>
             </View>
             <StatusPill status={idoso.status} />
             <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />

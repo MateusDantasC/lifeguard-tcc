@@ -5,8 +5,8 @@ export type Elder = {
   id: string;
   nome: string;
   status: StatusKey;
-  batimento: number;
-  temperatura: number;
+  batimento: number | null;
+  temperatura: number | null;
   telefone: string;
   ultimaAtualizacao: string;
 };
@@ -31,13 +31,19 @@ export type AlertLimits = {
   updatedAt: string;
 };
 
-type Caregiver = { id: string; nome: string; vinculadoDesde: string };
+export type Caregiver = { id: string; usuarioId: string; nome: string; vinculadoDesde: string };
 
 type MonitoringState = {
   elders: Elder[];
   caregivers: Caregiver[];
   alerts: MonitoringAlert[];
   limitsByElder: Record<string, AlertLimits>;
+  setElders: (elders: Elder[]) => void;
+  upsertElder: (elder: Elder) => void;
+  setCaregivers: (caregivers: Caregiver[]) => void;
+  setAlerts: (alerts: MonitoringAlert[]) => void;
+  setLimits: (elderId: string, limits: AlertLimits) => void;
+  reset: () => void;
   addElderByCode: (code: string) => boolean;
   removeCaregiver: (id: string) => void;
   updateAlertStatus: (id: string, status: AlertStatus) => void;
@@ -53,22 +59,17 @@ const defaultLimits: AlertLimits = {
   updatedAt: '18 ago 2026',
 };
 
-// TODO: substituir este store de demonstração pelos endpoints de monitoramento do backend.
 export const useMonitoringStore = create<MonitoringState>((set, get) => ({
-  elders: [
-    { id: '1', nome: 'Maria Silva', status: 'normal', batimento: 76, temperatura: 36.4, telefone: '(11) 98888-1234', ultimaAtualizacao: 'há 2 minutos' },
-    { id: '2', nome: 'José Oliveira', status: 'atencao', batimento: 112, temperatura: 37.8, telefone: '(11) 97777-4321', ultimaAtualizacao: 'há 1 minuto' },
-  ],
-  caregivers: [
-    { id: '1', nome: 'Ana Pereira', vinculadoDesde: 'desde jan/2026' },
-    { id: '2', nome: 'Carlos Souza', vinculadoDesde: 'desde mar/2026' },
-  ],
-  alerts: [
-    { id: '1', idosoId: '2', idosoNome: 'José Oliveira', tipo: 'batimento', valor: 128, horario: 'Hoje, 14:32', status: 'novo' },
-    { id: '2', idosoId: '1', idosoNome: 'Maria Silva', tipo: 'temperatura', valor: 38.2, horario: 'Ontem, 21:10', status: 'visto' },
-    { id: '3', idosoId: '2', idosoNome: 'José Oliveira', tipo: 'batimento', valor: 122, horario: 'Ontem, 09:47', status: 'resolvido' },
-  ],
-  limitsByElder: { '1': defaultLimits, '2': defaultLimits },
+  elders: [],
+  caregivers: [],
+  alerts: [],
+  limitsByElder: {},
+  setElders: (elders) => set({ elders }),
+  upsertElder: (elder) => set((state) => ({ elders: [...state.elders.filter((item) => item.id !== elder.id), elder] })),
+  setCaregivers: (caregivers) => set({ caregivers }),
+  setAlerts: (alerts) => set({ alerts }),
+  setLimits: (elderId, limits) => set((state) => ({ limitsByElder: { ...state.limitsByElder, [elderId]: limits } })),
+  reset: () => set({ elders: [], caregivers: [], alerts: [], limitsByElder: {} }),
   addElderByCode: (code) => {
     if (get().elders.some((elder) => elder.id === `code-${code}`)) return false;
     set((state) => ({

@@ -9,6 +9,8 @@ import AppButton from '../components/AppButton';
 import SegmentedToggle from '../components/SegmentedToggle';
 import BackHeader from '../components/BackHeader';
 import InlineNotice from '../components/InlineNotice';
+import { apiRequest, ApiError } from '../services/api';
+import { useAuthStore } from '../store/authStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cadastro'>;
 
@@ -19,8 +21,10 @@ export default function CadastroScreen({ navigation }: Props) {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
   const [erro, setErro] = useState('');
+  const [loading, setLoading] = useState(false);
+  const setSession = useAuthStore((state) => state.setSession);
 
-  function handleCadastro() {
+  async function handleCadastro() {
     if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
       setErro('Preencha todos os campos.');
       return;
@@ -29,19 +33,29 @@ export default function CadastroScreen({ navigation }: Props) {
       setErro('Digite um e-mail válido.');
       return;
     }
-    if (senha.length < 6) {
-      setErro('A senha deve ter pelo menos 6 caracteres.');
+    if (senha.length < 8) {
+      setErro('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
     if (senha !== confirmarSenha) {
       setErro('As senhas não coincidem.');
       return;
     }
-    // TODO: substituir por chamada real ao backend (POST /cadastro)
-    setErro('');
-    Alert.alert('Conta criada', 'Seu cadastro foi simulado com sucesso. Agora você já pode entrar.', [
-      { text: 'Continuar', onPress: () => navigation.navigate('Login') },
-    ]);
+    setLoading(true);
+    try {
+      const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
+        method: 'POST',
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), senha, tipo: tipoConta }),
+      });
+      setSession(response.token, response.usuario);
+      setErro('');
+      Alert.alert('Conta criada', 'Seu cadastro foi concluído com sucesso.');
+      navigation.reset({ index: 0, routes: [{ name: tipoConta === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível criar sua conta agora.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -66,13 +80,13 @@ export default function CadastroScreen({ navigation }: Props) {
         <View style={styles.fields}>
           <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} placeholder="Seu nome completo" autoComplete="name" required />
           <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
-          <AppTextInput label="Senha" value={senha} onChangeText={(value) => { setSenha(value); setErro(''); }} secureTextEntry autoComplete="new-password" placeholder="Pelo menos 6 caracteres" required />
+          <AppTextInput label="Senha" value={senha} onChangeText={(value) => { setSenha(value); setErro(''); }} secureTextEntry autoComplete="new-password" placeholder="Pelo menos 8 caracteres" required />
           <AppTextInput label="Confirmar senha" value={confirmarSenha} onChangeText={(value) => { setConfirmarSenha(value); setErro(''); }} secureTextEntry placeholder="Repita sua senha" returnKeyType="done" onSubmitEditing={handleCadastro} required />
         </View>
 
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
-        <AppButton label="Criar minha conta" icon="account-plus-outline" onPress={handleCadastro} />
+        <AppButton label="Criar minha conta" icon="account-plus-outline" onPress={handleCadastro} loading={loading} />
         <AppButton label="Já tenho conta" variant="text" onPress={() => navigation.navigate('Login')} />
       </ScrollView>
       </KeyboardAvoidingView>

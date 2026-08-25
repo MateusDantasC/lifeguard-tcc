@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,22 +9,36 @@ import AppTextInput from '../../components/AppTextInput';
 import AppButton from '../../components/AppButton';
 import Card from '../../components/Card';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchLimits, saveLimits } from '../../services/monitoring';
+import { ApiError } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConfigurarLimites'>;
 
-// TODO: carregar valores reais (GET /limites-alerta/:idosoId)
 export default function ConfigurarLimitesScreen({ navigation, route }: Props) {
   const { idosoId, nome } = route.params;
   const savedLimits = useMonitoringStore((state) => state.limitsByElder[idosoId]);
-  const updateLimits = useMonitoringStore((state) => state.updateLimits);
+  const setLimits = useMonitoringStore((state) => state.setLimits);
 
   const [batimentoMin, setBatimentoMin] = useState(String(savedLimits?.batimentoMin ?? 60));
   const [batimentoMax, setBatimentoMax] = useState(String(savedLimits?.batimentoMax ?? 120));
   const [temperaturaMin, setTemperaturaMin] = useState(String(savedLimits?.temperaturaMin ?? 35.5));
   const [temperaturaMax, setTemperaturaMax] = useState(String(savedLimits?.temperaturaMax ?? 37.8));
   const [erro, setErro] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSalvar() {
+  useFocusEffect(useCallback(() => {
+    void fetchLimits(idosoId).then((limits) => {
+      setLimits(idosoId, limits);
+      setBatimentoMin(String(limits.batimentoMin));
+      setBatimentoMax(String(limits.batimentoMax));
+      setTemperaturaMin(String(limits.temperaturaMin));
+      setTemperaturaMax(String(limits.temperaturaMax));
+      setErro('');
+    }).catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar os limites.'));
+  }, [idosoId, setLimits]));
+
+  async function handleSalvar() {
     const values = [batimentoMin, batimentoMax, temperaturaMin, temperaturaMax].map((value) => Number(value.replace(',', '.')));
     if (values.some((value) => !Number.isFinite(value))) {
       setErro('Preencha todos os limites com números válidos.');
@@ -34,11 +48,19 @@ export default function ConfigurarLimitesScreen({ navigation, route }: Props) {
       setErro('O valor mínimo precisa ser menor que o máximo.');
       return;
     }
-    // TODO: enviar pro backend (PUT /limites-alerta/:idosoId)
-    setErro('');
-    updateLimits(idosoId, { batimentoMin: values[0], batimentoMax: values[1], temperaturaMin: values[2], temperaturaMax: values[3] });
-    Alert.alert('Limites salvos', `Novos limites de alerta definidos para ${nome}.`);
-    navigation.goBack();
+    setLoading(true);
+    try {
+      const input = { batimentoMin: values[0], batimentoMax: values[1], temperaturaMin: values[2], temperaturaMax: values[3] };
+      const saved = await saveLimits(idosoId, input);
+      setLimits(idosoId, saved);
+      setErro('');
+      Alert.alert('Limites salvos', `Novos limites de alerta definidos para ${nome}.`);
+      navigation.goBack();
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível salvar os limites.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -65,7 +87,7 @@ export default function ConfigurarLimitesScreen({ navigation, route }: Props) {
         </Card>
 
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
-        <AppButton label="Salvar limites" icon="content-save-outline" onPress={handleSalvar} style={styles.save} />
+        <AppButton label="Salvar limites" icon="content-save-outline" onPress={handleSalvar} loading={loading} style={styles.save} />
       </ScrollView>
     </SafeAreaView>
   );

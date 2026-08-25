@@ -1,4 +1,5 @@
-import { Alert, Linking, ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, Linking, ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -11,13 +12,43 @@ import HomeHeader from '../../components/HomeHeader';
 import Card from '../../components/Card';
 import SectionHeader from '../../components/SectionHeader';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchElder } from '../../services/monitoring';
+import { ApiError } from '../../services/api';
+import InlineNotice from '../../components/InlineNotice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
 
 export default function HomeIdosoScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
-  // TODO: substituir por dados reais (GET /leituras/atual/:idosoId)
-  const leitura = useMonitoringStore((state) => state.elders[0]);
+  const leitura = useMonitoringStore((state) => state.elders.find((elder) => elder.id === user?.id));
+  const upsertElder = useMonitoringStore((state) => state.upsertElder);
+  const setLimits = useMonitoringStore((state) => state.setLimits);
+  const [refreshing, setRefreshing] = useState(false);
+  const [erro, setErro] = useState('');
+
+  const refresh = useCallback(async (showSpinner = false) => {
+    if (!user) return;
+    if (showSpinner) setRefreshing(true);
+    try {
+      const result = await fetchElder(user.id);
+      upsertElder(result.elder);
+      if (result.limits) setLimits(user.id, result.limits);
+      setErro('');
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [setLimits, upsertElder, user]);
+
+  useFocusEffect(useCallback(() => {
+    void refresh(true);
+    const interval = setInterval(() => void refresh(), 5_000);
+    return () => clearInterval(interval);
+  }, [refresh]));
+
+  const status = leitura?.status ?? 'sem_sinal';
 
   const acessos = [
     { icon: 'chart-line' as const, label: 'Histórico', onPress: () => navigation.navigate('Historico') },
@@ -35,17 +66,19 @@ export default function HomeIdosoScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
         <HomeHeader title={`Olá, ${(user?.nome ?? 'Usuário').split(' ')[0]}`} subtitle="Seu cuidado está sendo acompanhado" onProfile={() => navigation.navigate('Perfil')} />
 
+        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+
         <Card style={styles.statusCard}>
-          <View style={styles.statusCopy}><Text style={styles.statusTitle}>Tudo bem por aqui</Text><Text style={styles.statusSubtitle}>Dados atualizados {leitura.ultimaAtualizacao}</Text></View>
-          <StatusPill status={leitura.status} />
+          <View style={styles.statusCopy}><Text style={styles.statusTitle}>{status === 'normal' ? 'Tudo bem por aqui' : status === 'sem_sinal' ? 'Aguardando sinal' : 'Atenção aos seus sinais'}</Text><Text style={styles.statusSubtitle}>Dados atualizados {leitura?.ultimaAtualizacao ?? 'assim que houver uma leitura'}</Text></View>
+          <StatusPill status={status} />
         </Card>
 
         <View style={styles.readingsRow}>
-          <VitalCard icon="heart-pulse" iconColor={colors.ember} value={leitura.batimento} unit="bpm" label="Batimento" showPulse />
-          <VitalCard icon="thermometer" iconColor={colors.amber} value={leitura.temperatura} unit="°C" label="Temperatura" />
+          <VitalCard icon="heart-pulse" iconColor={colors.ember} value={leitura?.batimento ?? '--'} unit="bpm" label="Batimento" showPulse />
+          <VitalCard icon="thermometer" iconColor={colors.amber} value={leitura?.temperatura ?? '--'} unit="°C" label="Temperatura" />
         </View>
 
         <SectionHeader title="Acesso rápido" />

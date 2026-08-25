@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,26 +10,42 @@ import Card from '../../components/Card';
 import SegmentedToggle from '../../components/SegmentedToggle';
 import EmptyState from '../../components/EmptyState';
 import { useMonitoringStore, type AlertStatus } from '../../store/monitoringStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { apiRequest, ApiError } from '../../services/api';
+import { fetchCaregiverDashboard } from '../../services/monitoring';
+import InlineNotice from '../../components/InlineNotice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Alertas'>;
 const STATUS_LABEL: Record<AlertStatus, string> = { novo: 'Novo', visto: 'Visto', resolvido: 'Resolvido' };
 
 export default function AlertasScreen({ navigation }: Props) {
-  // TODO: substituir por dados reais (GET /alertas/cuidador/:cuidadorId)
   const alertas = useMonitoringStore((state) => state.alerts);
   const updateAlertStatus = useMonitoringStore((state) => state.updateAlertStatus);
+  const setAlerts = useMonitoringStore((state) => state.setAlerts);
   const [filtro, setFiltro] = useState<'pendentes' | 'resolvidos'>('pendentes');
+  const [erro, setErro] = useState('');
   const filtrados = alertas.filter((alerta) => filtro === 'pendentes' ? alerta.status !== 'resolvido' : alerta.status === 'resolvido');
 
-  function marcarResolvido(id: string) {
-    // TODO: chamar backend (PATCH /alertas/:id) pra persistir
-    updateAlertStatus(id, 'resolvido');
+  useFocusEffect(useCallback(() => {
+    void fetchCaregiverDashboard()
+      .then((dashboard) => { setAlerts(dashboard.alerts); setErro(''); })
+      .catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar os alertas.'));
+  }, [setAlerts]));
+
+  async function changeStatus(id: string, status: AlertStatus) {
+    const previous = alertas.find((alert) => alert.id === id)?.status;
+    updateAlertStatus(id, status);
+    try {
+      await apiRequest(`/alertas/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+      setErro('');
+    } catch (error) {
+      if (previous) updateAlertStatus(id, previous);
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar o alerta.');
+    }
   }
 
-  function marcarVisto(id: string) {
-    // TODO: persistir leitura do alerta (PATCH /alertas/:id/visto)
-    updateAlertStatus(id, 'visto');
-  }
+  function marcarResolvido(id: string) { void changeStatus(id, 'resolvido'); }
+  function marcarVisto(id: string) { void changeStatus(id, 'visto'); }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -37,6 +53,7 @@ export default function AlertasScreen({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.intro}>Acompanhe ocorrências fora dos limites definidos e registre quando estiverem resolvidas.</Text>
+        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
         <SegmentedToggle value={filtro} onChange={setFiltro} options={[{ value: 'pendentes', label: `Pendentes (${alertas.filter((item) => item.status !== 'resolvido').length})` }, { value: 'resolvidos', label: 'Resolvidos' }]} />
 
         {filtrados.length === 0 ? <EmptyState icon="bell-check-outline" title="Tudo resolvido" message="Não há alertas nesta categoria." /> : filtrados.map((alerta) => (

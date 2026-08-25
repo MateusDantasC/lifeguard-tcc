@@ -43,10 +43,11 @@ export const typography = {
   caption: 13,
 };
 
-export type StatusKey = 'normal' | 'atencao' | 'alerta';
+export type StatusKey = 'normal' | 'atencao' | 'alerta' | 'sem_sinal';
 
 export const statusConfig: Record<StatusKey, { bg: string; text: string; label: string }> = {
   normal: { bg: colors.mossBg, text: colors.mossText, label: 'Normal' },
   atencao: { bg: colors.amberBg, text: colors.amberText, label: 'Atenção' },
   alerta: { bg: colors.emberBg, text: colors.emberText, label: 'Alerta' },
+  sem_sinal: { bg: colors.border, text: colors.textSecondary, label: 'Sem sinal' },
 };

@@ -10,32 +10,42 @@ import AppButton from '../components/AppButton';
 import PulseLine from '../components/PulseLine';
 import SegmentedToggle from '../components/SegmentedToggle';
 import InlineNotice from '../components/InlineNotice';
+import { apiRequest, ApiError } from '../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
+  const [email, setEmail] = useState('ana@lifeguard.test');
+  const [senha, setSenha] = useState('Teste123!');
+  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('cuidador');
   const [erro, setErro] = useState('');
-  const setUser = useAuthStore((state) => state.setUser);
+  const [loading, setLoading] = useState(false);
+  const setSession = useAuthStore((state) => state.setSession);
 
-  function handleLogin() {
+  async function handleLogin() {
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail) || !senha) {
       setErro('Digite um e-mail válido e sua senha.');
       return;
     }
-    // TODO(temporário): trocar por chamada real ao backend (POST /login)
-    setUser({
-      id: '1',
-      nome: tipoConta === 'idoso' ? 'Maria Silva' : 'Ana Pereira',
-      email: normalizedEmail,
-      telefone: tipoConta === 'idoso' ? '(11) 98888-1234' : '(11) 99999-0000',
-      tipo: tipoConta,
-    });
-    setErro('');
-    navigation.reset({ index: 0, routes: [{ name: tipoConta === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
+    setLoading(true);
+    try {
+      const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: normalizedEmail, senha }),
+      });
+      if (response.usuario.tipo !== tipoConta) {
+        setErro(`Esta conta é de ${response.usuario.tipo}. Selecione a opção correta acima.`);
+        return;
+      }
+      setSession(response.token, response.usuario);
+      setErro('');
+      navigation.reset({ index: 0, routes: [{ name: response.usuario.tipo === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível entrar agora.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -63,9 +73,9 @@ export default function LoginScreen({ navigation }: Props) {
 
           {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
-          <AppButton label="Entrar" icon="login" onPress={handleLogin} />
+          <AppButton label="Entrar" icon="login" onPress={handleLogin} loading={loading} />
           <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} style={styles.forgot} />
-          <InlineNotice message="Protótipo: use qualquer e-mail válido e qualquer senha para entrar." />
+          <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou idoso maria@lifeguard.test. Senha: Teste123!" />
           <View style={styles.createAccount}>
             <Text style={styles.createText}>Ainda não tem conta?</Text>
             <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} />

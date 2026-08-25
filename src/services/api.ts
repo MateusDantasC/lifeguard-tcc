@@ -1,0 +1,73 @@
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.57.176.31:3333/api';
+
+let accessToken: string | null = null;
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export function setApiToken(token: string | null) {
+  accessToken = token;
+}
+
+export function getApiUrl() {
+  return API_URL;
+}
+
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...options.headers,
+      },
+    });
+    const body = response.status === 204 ? null : await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new ApiError(body?.erro ?? 'Não foi possível concluir a solicitação.', response.status, body?.codigo);
+    }
+    return body as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError('A conexão com o servidor demorou demais. Confira se o computador e o celular estão na mesma rede.');
+    }
+    throw new ApiError('Não foi possível conectar ao servidor. Confira se a API está ligada e se os aparelhos estão na mesma rede.');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function formatRelativeTime(value?: string | null) {
+  if (!value) return 'sem leitura';
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  if (elapsedSeconds < 10) return 'agora';
+  if (elapsedSeconds < 60) return `há ${elapsedSeconds} segundos`;
+  const minutes = Math.floor(elapsedSeconds / 60);
+  if (minutes < 60) return `há ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+  const hours = Math.floor(minutes / 60);
+  return `há ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+}
+
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}

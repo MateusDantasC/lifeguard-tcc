@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,27 +10,50 @@ import Card from '../../components/Card';
 import AppButton from '../../components/AppButton';
 import InlineNotice from '../../components/InlineNotice';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { apiRequest, ApiError } from '../../services/api';
+import { fetchCaregivers } from '../../services/monitoring';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cuidadores'>;
 
 export default function CuidadoresScreen({ navigation }: Props) {
   const [codigo, setCodigo] = useState<string | null>(null);
-  // TODO: substituir por dados reais (GET /vinculos/idoso/:idosoId)
   const cuidadores = useMonitoringStore((state) => state.caregivers);
   const removeCaregiver = useMonitoringStore((state) => state.removeCaregiver);
+  const setCaregivers = useMonitoringStore((state) => state.setCaregivers);
+  const [erro, setErro] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleGerarCodigo() {
-    // TODO: gerar código real de vínculo no backend (POST /vinculos/gerar-codigo)
-    setCodigo(String(Math.floor(100000 + Math.random() * 900000)));
+  useFocusEffect(useCallback(() => {
+    void fetchCaregivers()
+      .then((result) => { setCaregivers(result); setErro(''); })
+      .catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar os cuidadores.'));
+  }, [setCaregivers]));
+
+  async function handleGerarCodigo() {
+    setLoading(true);
+    try {
+      const response = await apiRequest<{ codigo: string }>('/vinculos/codigo', { method: 'POST' });
+      setCodigo(response.codigo);
+      setErro('');
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível gerar o código.');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleRemover(nome: string) {
-    // TODO: chamar backend pra remover o vínculo (DELETE /vinculos/:id)
+  function handleRemover(id: string, nome: string) {
     Alert.alert('Remover cuidador', `Remover ${nome} da sua lista de cuidadores?`, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Remover', style: 'destructive', onPress: () => {
-        const caregiver = cuidadores.find((item) => item.nome === nome);
-        if (caregiver) removeCaregiver(caregiver.id);
+      { text: 'Remover', style: 'destructive', onPress: async () => {
+        try {
+          await apiRequest(`/vinculos/${id}`, { method: 'DELETE' });
+          removeCaregiver(id);
+          setErro('');
+        } catch (error) {
+          setErro(error instanceof ApiError ? error.message : 'Não foi possível remover o vínculo.');
+        }
       } },
     ]);
   }
@@ -41,7 +64,8 @@ export default function CuidadoresScreen({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={styles.container}>
         <InlineNotice message="Somente pessoas com um código válido podem se vincular à sua conta." />
-        <AppButton label={codigo ? 'Gerar novo código' : 'Gerar código de vínculo'} icon="account-plus-outline" onPress={handleGerarCodigo} style={styles.generateButton} />
+        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+        <AppButton label={codigo ? 'Gerar novo código' : 'Gerar código de vínculo'} icon="account-plus-outline" onPress={handleGerarCodigo} loading={loading} style={styles.generateButton} />
 
         {codigo ? (
           <Card style={styles.codeCard}>
@@ -62,7 +86,7 @@ export default function CuidadoresScreen({ navigation }: Props) {
               <Text style={styles.cuidadorNome}>{cuidador.nome}</Text>
               <Text style={styles.cuidadorDesde}>{cuidador.vinculadoDesde}</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${cuidador.nome}`} onPress={() => handleRemover(cuidador.nome)} hitSlop={8} style={styles.removeButton}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${cuidador.nome}`} onPress={() => handleRemover(cuidador.id, cuidador.nome)} hitSlop={8} style={styles.removeButton}>
               <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.ember} />
             </Pressable>
           </Card>

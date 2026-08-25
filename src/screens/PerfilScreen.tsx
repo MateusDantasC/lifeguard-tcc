@@ -10,6 +10,8 @@ import BackHeader from '../components/BackHeader';
 import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
 import Card from '../components/Card';
+import { apiRequest, ApiError } from '../services/api';
+import { useMonitoringStore } from '../store/monitoringStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
@@ -17,22 +19,34 @@ export default function PerfilScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
   const logout = useAuthStore((state) => state.logout);
+  const resetMonitoring = useMonitoringStore((state) => state.reset);
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [telefone, setTelefone] = useState(user?.telefone ?? '(11) 99999-0000');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSave() {
+  async function handleSave() {
     if (!nome.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
       setError('Confira seu nome e e-mail antes de salvar.');
       return;
     }
-    // TODO: persistir as alterações (PATCH /usuarios/:id)
-    updateUser({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefone.trim() });
-    setError('');
-    setEditing(false);
-    Alert.alert('Perfil atualizado', 'Suas informações foram salvas neste protótipo.');
+    setLoading(true);
+    try {
+      const response = await apiRequest<{ usuario: NonNullable<typeof user> }>('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefone.trim() || null }),
+      });
+      updateUser(response.usuario);
+      setError('');
+      setEditing(false);
+      Alert.alert('Perfil atualizado', 'Suas informações foram salvas.');
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'Não foi possível salvar o perfil.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleLogout() {
@@ -43,6 +57,7 @@ export default function PerfilScreen({ navigation }: Props) {
         style: 'destructive',
         onPress: () => {
           logout();
+          resetMonitoring();
           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         },
       },
@@ -78,7 +93,7 @@ export default function PerfilScreen({ navigation }: Props) {
                 <AppTextInput label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" required />
                 <AppTextInput label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
                 {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-                <AppButton label="Salvar alterações" icon="content-save-outline" onPress={handleSave} />
+                <AppButton label="Salvar alterações" icon="content-save-outline" onPress={handleSave} loading={loading} />
                 <AppButton label="Cancelar" variant="text" onPress={() => { setEditing(false); setError(''); }} />
               </>
             ) : (

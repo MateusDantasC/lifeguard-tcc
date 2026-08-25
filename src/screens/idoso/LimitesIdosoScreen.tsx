@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,12 +9,34 @@ import BackHeader from '../../components/BackHeader';
 import Card from '../../components/Card';
 import InlineNotice from '../../components/InlineNotice';
 import { useMonitoringStore } from '../../store/monitoringStore';
+import { useAuthStore } from '../../store/authStore';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchLimits } from '../../services/monitoring';
+import { ApiError } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LimitesIdoso'>;
 
 export default function LimitesIdosoScreen({ navigation }: Props) {
-  // TODO: substituir pelos limites reais (GET /limites-alerta/:idosoId)
-  const limits = useMonitoringStore((state) => state.limitsByElder['1']);
+  const user = useAuthStore((state) => state.user);
+  const limits = useMonitoringStore((state) => user ? state.limitsByElder[user.id] : undefined);
+  const setLimits = useMonitoringStore((state) => state.setLimits);
+  const [erro, setErro] = useState('');
+
+  useFocusEffect(useCallback(() => {
+    if (!user) return;
+    void fetchLimits(user.id)
+      .then((result) => { setLimits(user.id, result); setErro(''); })
+      .catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar os limites.'));
+  }, [setLimits, user]));
+
+  if (!limits) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <BackHeader title="Meus limites de alerta" onBack={() => navigation.goBack()} />
+        <View style={styles.loading}><Text style={styles.updated}>{erro || 'Carregando limites...'}</Text></View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Meus limites de alerta" onBack={() => navigation.goBack()} />
@@ -56,4 +79,5 @@ const styles = StyleSheet.create({
   unit: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
   divider: { width: 1, backgroundColor: colors.border, marginHorizontal: 18 },
   updated: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.textSecondary, textAlign: 'center', marginTop: 6 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
 });

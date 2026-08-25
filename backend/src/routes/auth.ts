@@ -21,6 +21,12 @@ const loginSchema = z.object({
   senha: z.string().min(1),
 });
 
+const updateProfileSchema = z.object({
+  nome: z.string().trim().min(2).max(100),
+  email: z.email().transform((email) => email.toLowerCase()),
+  telefone: z.string().trim().min(8).max(20).nullable().optional(),
+});
+
 export const authRouter = Router();
 
 authRouter.post('/cadastro', async (req, res) => {
@@ -69,5 +75,18 @@ authRouter.post('/login', async (req, res) => {
 authRouter.get('/me', requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } });
   if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  res.json({ usuario: serializeUser(user) });
+});
+
+authRouter.patch('/me', requireAuth, async (req, res) => {
+  const input = updateProfileSchema.parse(req.body);
+  const emailOwner = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+  if (emailOwner && emailOwner.id !== req.auth!.userId) {
+    throw new HttpError(409, 'Este e-mail já está cadastrado.', 'EMAIL_IN_USE');
+  }
+  const user = await prisma.user.update({
+    where: { id: req.auth!.userId },
+    data: { name: input.nome, email: input.email, phone: input.telefone || null },
+  });
   res.json({ usuario: serializeUser(user) });
 });
