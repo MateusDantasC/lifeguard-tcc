@@ -17,20 +17,27 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Cadastro'>;
 export default function CadastroScreen({ navigation }: Props) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
 
   async function handleCadastro() {
-    if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
+    if (!nome.trim() || !email.trim() || !telefone.trim() || !senha || !confirmarSenha) {
       setErro('Preencha todos os campos.');
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
       setErro('Digite um e-mail válido.');
+      return;
+    }
+    if (telefone.replace(/\D/g, '').length < 10) {
+      setErro('Digite um telefone válido com DDD.');
       return;
     }
     if (senha.length < 8) {
@@ -45,7 +52,7 @@ export default function CadastroScreen({ navigation }: Props) {
     try {
       const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
         method: 'POST',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), senha, tipo: tipoConta }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefone.trim(), senha, tipo: tipoConta }),
       });
       setSession(response.token, response.usuario);
       setErro('');
@@ -69,6 +76,7 @@ export default function CadastroScreen({ navigation }: Props) {
         <SegmentedToggle
           value={tipoConta}
           onChange={setTipoConta}
+          disabled={loading}
           options={[
             { value: 'idoso', label: 'Idoso' },
             { value: 'cuidador', label: 'Cuidador' },
@@ -78,16 +86,42 @@ export default function CadastroScreen({ navigation }: Props) {
         <InlineNotice message={tipoConta === 'idoso' ? 'Você poderá acompanhar seus sinais e compartilhar o cuidado com pessoas de confiança.' : 'Você poderá acompanhar idosos vinculados e configurar os limites de alerta.'} />
 
         <View style={styles.fields}>
-          <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} placeholder="Seu nome completo" autoComplete="name" required />
-          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
-          <AppTextInput label="Senha" value={senha} onChangeText={(value) => { setSenha(value); setErro(''); }} secureTextEntry autoComplete="new-password" placeholder="Pelo menos 8 caracteres" required />
-          <AppTextInput label="Confirmar senha" value={confirmarSenha} onChangeText={(value) => { setConfirmarSenha(value); setErro(''); }} secureTextEntry placeholder="Repita sua senha" returnKeyType="done" onSubmitEditing={handleCadastro} required />
+          <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" required />
+          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
+          <AppTextInput label="Telefone com DDD" value={telefone} onChangeText={(value) => { setTelefone(value.slice(0, 20)); setErro(''); }} editable={!loading} autoComplete="tel" keyboardType="phone-pad" placeholder="(11) 99999-9999" required />
+          <AppTextInput
+            label="Senha"
+            value={senha}
+            onChangeText={(value) => { setSenha(value); setErro(''); }}
+            editable={!loading}
+            secureTextEntry={!mostrarSenha}
+            rightIcon={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+            rightIconLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+            onRightIconPress={() => setMostrarSenha((value) => !value)}
+            autoComplete="new-password"
+            placeholder="Pelo menos 8 caracteres"
+            required
+          />
+          <AppTextInput
+            label="Confirmar senha"
+            value={confirmarSenha}
+            onChangeText={(value) => { setConfirmarSenha(value); setErro(''); }}
+            editable={!loading}
+            secureTextEntry={!mostrarConfirmacao}
+            rightIcon={mostrarConfirmacao ? 'eye-off-outline' : 'eye-outline'}
+            rightIconLabel={mostrarConfirmacao ? 'Ocultar confirmação da senha' : 'Mostrar confirmação da senha'}
+            onRightIconPress={() => setMostrarConfirmacao((value) => !value)}
+            placeholder="Repita sua senha"
+            returnKeyType="done"
+            onSubmitEditing={handleCadastro}
+            required
+          />
         </View>
 
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
         <AppButton label="Criar minha conta" icon="account-plus-outline" onPress={handleCadastro} loading={loading} />
-        <AppButton label="Já tenho conta" variant="text" onPress={() => navigation.navigate('Login')} />
+        <AppButton label="Já tenho conta" variant="text" onPress={() => navigation.navigate('Login')} disabled={loading} />
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

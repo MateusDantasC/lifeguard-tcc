@@ -31,7 +31,7 @@ export type AlertLimits = {
   updatedAt: string;
 };
 
-export type Caregiver = { id: string; usuarioId: string; nome: string; vinculadoDesde: string };
+export type Caregiver = { id: string; usuarioId: string; nome: string; telefone: string; vinculadoDesde: string };
 
 type MonitoringState = {
   elders: Elder[];

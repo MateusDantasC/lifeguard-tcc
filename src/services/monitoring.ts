@@ -96,11 +96,12 @@ export async function fetchReadings(elderId: string, limit = 100) {
 }
 
 export async function fetchCaregivers(): Promise<Caregiver[]> {
-  const response = await apiRequest<{ vinculos: Array<{ id: string; usuario: { id: string; nome: string }; vinculadoEm: string }> }>('/vinculos');
+  const response = await apiRequest<{ vinculos: Array<{ id: string; usuario: { id: string; nome: string; telefone?: string | null }; vinculadoEm: string }> }>('/vinculos');
   return response.vinculos.map((link) => ({
     id: link.id,
     usuarioId: link.usuario.id,
     nome: link.usuario.nome,
+    telefone: link.usuario.telefone ?? '',
     vinculadoDesde: `desde ${new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date(link.vinculadoEm))}`,
   }));
 }

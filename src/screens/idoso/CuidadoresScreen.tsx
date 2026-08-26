@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -58,6 +58,17 @@ export default function CuidadoresScreen({ navigation }: Props) {
     ]);
   }
 
+  function handleLigar(nome: string, telefone: string) {
+    if (!telefone) {
+      Alert.alert('Telefone indisponível', `${nome} ainda não possui um telefone cadastrado.`);
+      return;
+    }
+    Alert.alert(`Ligar para ${nome}?`, telefone, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Ligar', onPress: () => void Linking.openURL(`tel:${telefone.replace(/\D/g, '')}`) },
+    ]);
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Cuidadores" onBack={() => navigation.goBack()} />
@@ -84,8 +95,11 @@ export default function CuidadoresScreen({ navigation }: Props) {
             </View>
             <View style={styles.cuidadorInfo}>
               <Text style={styles.cuidadorNome}>{cuidador.nome}</Text>
-              <Text style={styles.cuidadorDesde}>{cuidador.vinculadoDesde}</Text>
+              <Text style={styles.cuidadorDesde}>{cuidador.telefone || 'Telefone não informado'} · {cuidador.vinculadoDesde}</Text>
             </View>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Ligar para ${cuidador.nome}`} onPress={() => handleLigar(cuidador.nome, cuidador.telefone)} hitSlop={8} style={styles.callButton}>
+              <MaterialCommunityIcons name="phone-outline" size={22} color={colors.coral} />
+            </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${cuidador.nome}`} onPress={() => handleRemover(cuidador.id, cuidador.nome)} hitSlop={8} style={styles.removeButton}>
               <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.ember} />
             </Pressable>
@@ -111,6 +125,7 @@ const styles = StyleSheet.create({
   cuidadorInfo: { flex: 1 },
   cuidadorNome: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },
   cuidadorDesde: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  callButton: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
   removeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.textSecondary, textAlign: 'center', paddingVertical: 32 },
 });
