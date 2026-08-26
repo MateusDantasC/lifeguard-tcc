@@ -1,4 +1,4 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.57.176.31:3333/api';
+let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://172.27.246.157:3333/api';
 
 let accessToken: string | null = null;
 
@@ -18,7 +18,11 @@ export function setApiToken(token: string | null) {
 }
 
 export function getApiUrl() {
-  return API_URL;
+  return apiUrl;
+}
+
+export function setApiUrl(value: string) {
+  apiUrl = value.trim().replace(/\/+$/, '');
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -26,7 +30,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   try {
-    const response = await fetch(`${API_URL}${path}`, {
+    const response = await fetch(`${apiUrl}${path}`, {
       ...options,
       signal: controller.signal,
       headers: {

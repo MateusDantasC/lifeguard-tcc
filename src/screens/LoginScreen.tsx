@@ -10,14 +10,17 @@ import AppButton from '../components/AppButton';
 import PulseLine from '../components/PulseLine';
 import SegmentedToggle from '../components/SegmentedToggle';
 import InlineNotice from '../components/InlineNotice';
-import { apiRequest, ApiError } from '../services/api';
+import { apiRequest, ApiError, getApiUrl, setApiUrl } from '../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('ana@lifeguard.test');
-  const [senha, setSenha] = useState('Teste123!');
-  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('cuidador');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
+  const [mostrarServidor, setMostrarServidor] = useState(false);
+  const [servidor, setServidor] = useState(getApiUrl());
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
@@ -28,7 +31,13 @@ export default function LoginScreen({ navigation }: Props) {
       setErro('Digite um e-mail válido e sua senha.');
       return;
     }
+    if (!/^https?:\/\/\S+\/api$/.test(servidor.trim().replace(/\/+$/, ''))) {
+      setErro('Confira o endereço do servidor. Exemplo: http://172.27.246.157:3333/api');
+      setMostrarServidor(true);
+      return;
+    }
     setLoading(true);
+    setApiUrl(servidor);
     try {
       const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/login', {
         method: 'POST',
@@ -42,6 +51,7 @@ export default function LoginScreen({ navigation }: Props) {
       setErro('');
       navigation.reset({ index: 0, routes: [{ name: response.usuario.tipo === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
     } catch (error) {
+      if (error instanceof ApiError && !error.status) setMostrarServidor(true);
       setErro(error instanceof ApiError ? error.message : 'Não foi possível entrar agora.');
     } finally {
       setLoading(false);
@@ -66,19 +76,48 @@ export default function LoginScreen({ navigation }: Props) {
               { value: 'idoso', label: 'Sou idoso' },
               { value: 'cuidador', label: 'Sou cuidador' },
             ]}
+            disabled={loading}
           />
 
-          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
-          <AppTextInput label="Senha" value={senha} onChangeText={(value) => { setSenha(value); setErro(''); }} secureTextEntry autoComplete="password" placeholder="Sua senha" returnKeyType="done" onSubmitEditing={handleLogin} required />
+          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
+          <AppTextInput
+            label="Senha"
+            value={senha}
+            onChangeText={(value) => { setSenha(value); setErro(''); }}
+            editable={!loading}
+            secureTextEntry={!mostrarSenha}
+            rightIcon={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+            rightIconLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+            onRightIconPress={() => setMostrarSenha((value) => !value)}
+            autoComplete="password"
+            placeholder="Sua senha"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+            required
+          />
+
+          {mostrarServidor ? (
+            <AppTextInput
+              label="Endereço do servidor local"
+              value={servidor}
+              onChangeText={(value) => { setServidor(value); setErro(''); }}
+              editable={!loading}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              helperText="Use o IPv4 do computador conectado ao roteamento USB, seguido de :3333/api."
+            />
+          ) : null}
 
           {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
           <AppButton label="Entrar" icon="login" onPress={handleLogin} loading={loading} />
-          <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} style={styles.forgot} />
+          <AppButton label={mostrarServidor ? 'Ocultar configuração do servidor' : 'Configurar conexão'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
+          <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} disabled={loading} style={styles.forgot} />
           <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou idoso maria@lifeguard.test. Senha: Teste123!" />
           <View style={styles.createAccount}>
             <Text style={styles.createText}>Ainda não tem conta?</Text>
-            <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} />
+            <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} disabled={loading} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -97,6 +136,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, marginBottom: 8 },
   erro: { fontFamily: fonts.body, color: colors.emberText, marginBottom: 12, fontSize: 14 },
   forgot: { alignSelf: 'center', marginVertical: 4 },
+  serverConfig: { alignSelf: 'center', marginTop: 4 },
   createAccount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', marginTop: 12 },
   createText: { fontFamily: fonts.body, fontSize: 15, color: colors.textSecondary },
 });
