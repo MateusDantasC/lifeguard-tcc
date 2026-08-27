@@ -1,14 +1,29 @@
 import { create } from 'zustand';
 import { setApiToken } from '../services/api';
 
-type AuthState = {
-  user: null | {
+export type ElderProfile = {
+  dataNascimento?: string | null;
+  tipoSanguineo?: string | null;
+  alergias?: string | null;
+  medicamentos?: string | null;
+  condicoesMedicas?: string | null;
+  observacoesImportantes?: string | null;
+  contatoEmergenciaNome?: string | null;
+  contatoEmergenciaTelefone?: string | null;
+};
+
+export type AuthUser = {
     id: string;
     nome: string;
     email: string;
-    telefone?: string;
+    telefone?: string | null;
+    foto?: string | null;
     tipo: 'idoso' | 'cuidador';
-  };
+    perfilIdoso?: ElderProfile | null;
+};
+
+type AuthState = {
+  user: AuthUser | null;
   token: string | null;
   setSession: (token: string, user: NonNullable<AuthState['user']>) => void;
   setUser: (user: AuthState['user']) => void;

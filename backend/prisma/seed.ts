@@ -47,6 +47,31 @@ async function main() {
     },
   });
 
+  await prisma.elderProfile.upsert({
+    where: { userId: elder.id },
+    create: {
+      userId: elder.id,
+      birthDate: new Date('1954-04-12T12:00:00.000Z'),
+      bloodType: 'O+',
+      medicalConditions: 'Hipertensão controlada',
+      allergies: 'Nenhuma alergia conhecida',
+      medications: 'Losartana 50 mg pela manhã',
+      importantNotes: 'Usa óculos e pode precisar de ajuda para ler textos pequenos.',
+      emergencyContactName: 'Ana Pereira',
+      emergencyContactPhone: '(11) 99999-0001',
+    },
+    update: {
+      birthDate: new Date('1954-04-12T12:00:00.000Z'),
+      bloodType: 'O+',
+      medicalConditions: 'Hipertensão controlada',
+      allergies: 'Nenhuma alergia conhecida',
+      medications: 'Losartana 50 mg pela manhã',
+      importantNotes: 'Usa óculos e pode precisar de ajuda para ler textos pequenos.',
+      emergencyContactName: 'Ana Pereira',
+      emergencyContactPhone: '(11) 99999-0001',
+    },
+  });
+
   await prisma.alertLimit.update({ where: { elderId: elder.id }, data: { definedById: caregiver.id } });
   await prisma.caregiverElderLink.upsert({
     where: { caregiverId_elderId: { caregiverId: caregiver.id, elderId: elder.id } },

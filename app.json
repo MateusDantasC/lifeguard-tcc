@@ -3,7 +3,7 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
@@ -26,6 +26,14 @@
     },
     "plugins": [
       "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O LifeGuard usa a foto escolhida por você no seu perfil.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
