@@ -4,6 +4,7 @@ import type { ElderProfile } from './authStore';
 
 export type Elder = {
   id: string;
+  vinculoId?: string;
   nome: string;
   status: StatusKey;
   batimento: number | null;
@@ -43,6 +44,7 @@ type MonitoringState = {
   limitsByElder: Record<string, AlertLimits>;
   setElders: (elders: Elder[]) => void;
   upsertElder: (elder: Elder) => void;
+  removeElder: (elderId: string) => void;
   setCaregivers: (caregivers: Caregiver[]) => void;
   setAlerts: (alerts: MonitoringAlert[]) => void;
   setLimits: (elderId: string, limits: AlertLimits) => void;
@@ -68,7 +70,11 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   alerts: [],
   limitsByElder: {},
   setElders: (elders) => set({ elders }),
-  upsertElder: (elder) => set((state) => ({ elders: [...state.elders.filter((item) => item.id !== elder.id), elder] })),
+  upsertElder: (elder) => set((state) => {
+    const current = state.elders.find((item) => item.id === elder.id);
+    return { elders: [...state.elders.filter((item) => item.id !== elder.id), { ...current, ...elder }] };
+  }),
+  removeElder: (elderId) => set((state) => ({ elders: state.elders.filter((elder) => elder.id !== elderId) })),
   setCaregivers: (caregivers) => set({ caregivers }),
   setAlerts: (alerts) => set({ alerts }),
   setLimits: (elderId, limits) => set((state) => ({ limitsByElder: { ...state.limitsByElder, [elderId]: limits } })),

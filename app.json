@@ -3,7 +3,7 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
@@ -26,6 +26,12 @@
     },
     "plugins": [
       "expo-font",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -62,7 +68,8 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/92c95f11-213c-4abb-80d7-530ac17bfcdb"
+      "url": "https://u.expo.dev/92c95f11-213c-4abb-80d7-530ac17bfcdb",
+      "checkAutomatically": "NEVER"
     }
   }
 }

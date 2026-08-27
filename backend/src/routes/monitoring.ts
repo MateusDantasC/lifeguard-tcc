@@ -99,7 +99,7 @@ monitoringRouter.get('/idosos', async (req, res) => {
     orderBy: { createdAt: 'asc' },
   });
 
-  const idosos = links.map(({ elder }) => {
+  const idosos = links.map(({ id: linkId, elder }) => {
     const latest = elder.devices[0]?.readings[0] ?? null;
     const limits = elder.alertLimits ?? {
       heartRateMinimum: 50,
@@ -109,6 +109,7 @@ monitoringRouter.get('/idosos', async (req, res) => {
     };
     return {
       id: elder.id,
+      vinculoId: linkId,
       nome: elder.name,
       telefone: elder.phone,
       status: classifyReading(latest, limits),

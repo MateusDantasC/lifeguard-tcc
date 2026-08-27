@@ -8,11 +8,13 @@ import BackHeader from '../../components/BackHeader';
 import Card from '../../components/Card';
 import AppButton from '../../components/AppButton';
 import InlineNotice from '../../components/InlineNotice';
+import { formatPhone, phoneUri } from '../../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ContatoRapido'>;
 
 export default function ContatoRapidoScreen({ navigation, route }: Props) {
   const { nome, telefone } = route.params;
+  const formattedPhone = formatPhone(telefone) || 'Telefone não informado';
 
   async function openUrl(url: string, unavailableMessage: string) {
     const canOpen = await Linking.canOpenURL(url);
@@ -24,21 +26,25 @@ export default function ContatoRapidoScreen({ navigation, route }: Props) {
   }
 
   function call() {
-    Alert.alert(`Ligar para ${nome}?`, telefone, [
+    const uri = phoneUri(telefone);
+    if (!uri) { Alert.alert('Telefone indisponível', `${nome} ainda não possui um telefone válido.`); return; }
+    Alert.alert(`Ligar para ${nome}?`, formattedPhone, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Ligar', onPress: () => openUrl(`tel:${telefone.replace(/\D/g, '')}`, 'Este aparelho não pode iniciar ligações.') },
+      { text: 'Ligar', onPress: () => openUrl(uri, 'Este aparelho não pode iniciar ligações.') },
     ]);
   }
 
   function message() {
-    openUrl(`sms:${telefone.replace(/\D/g, '')}?body=${encodeURIComponent(`Olá, ${nome}. Está tudo bem?`)}`, 'Este aparelho não pode enviar mensagens.');
+    const uri = phoneUri(telefone, 'sms');
+    if (!uri) { Alert.alert('Telefone indisponível', `${nome} ainda não possui um telefone válido.`); return; }
+    openUrl(`${uri}?body=${encodeURIComponent(`Olá, ${nome}. Está tudo bem?`)}`, 'Este aparelho não pode enviar mensagens.');
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Contato rápido" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{nome.charAt(0)}</Text></View><Text style={styles.name}>{nome}</Text><Text style={styles.phone}>{telefone}</Text></View>
+        <View style={styles.identity}><View style={styles.avatar}><Text style={styles.avatarText}>{nome.charAt(0)}</Text></View><Text style={styles.name}>{nome}</Text><Text style={styles.phone}>{formattedPhone}</Text></View>
         <Card style={styles.card}>
           <MaterialCommunityIcons name="phone-in-talk-outline" size={28} color={colors.coral} />
           <View style={styles.copy}><Text style={styles.cardTitle}>Falar agora</Text><Text style={styles.cardText}>Use uma ligação ou mensagem para verificar como {nome.split(' ')[0]} está.</Text></View>

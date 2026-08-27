@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,8 +13,9 @@ import Card from '../../components/Card';
 import { useMonitoringStore } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchElder } from '../../services/monitoring';
-import { ApiError } from '../../services/api';
+import { apiRequest, ApiError } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
+import { formatPhone } from '../../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalheIdoso'>;
 
@@ -23,12 +24,13 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
   const elder = useMonitoringStore((state) => state.elders.find((item) => item.id === idosoId));
   const upsertElder = useMonitoringStore((state) => state.upsertElder);
   const setLimits = useMonitoringStore((state) => state.setLimits);
+  const removeElder = useMonitoringStore((state) => state.removeElder);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState('');
   const leitura = elder ?? { id: idosoId, nome, batimento: null, temperatura: null, status: 'sem_sinal' as const, ultimaAtualizacao: 'indisponível', telefone: '' };
   const profile = leitura.perfilIdoso;
   const emergencyContact = profile?.contatoEmergenciaNome && profile?.contatoEmergenciaTelefone
-    ? `${profile.contatoEmergenciaNome} · ${profile.contatoEmergenciaTelefone}`
+    ? `${profile.contatoEmergenciaNome} · ${formatPhone(profile.contatoEmergenciaTelefone)}`
     : 'Não informado';
 
   const refresh = useCallback(async (showSpinner = false) => {
@@ -50,6 +52,25 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
     const interval = setInterval(() => void refresh(), 5_000);
     return () => clearInterval(interval);
   }, [refresh]));
+
+  function handleRemove() {
+    if (!leitura.vinculoId) {
+      Alert.alert('Vínculo indisponível', 'Atualize a lista de idosos e tente novamente.');
+      return;
+    }
+    Alert.alert('Remover idoso', `Você deixará de acompanhar ${leitura.nome} e não verá mais seus dados. Deseja continuar?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Remover', style: 'destructive', onPress: async () => {
+        try {
+          await apiRequest(`/vinculos/${leitura.vinculoId}`, { method: 'DELETE' });
+          removeElder(idosoId);
+          navigation.popTo('HomeCuidador');
+        } catch (error) {
+          setErro(error instanceof ApiError ? error.message : 'Não foi possível remover o vínculo.');
+        }
+      } },
+    ]);
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -102,6 +123,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
           style={styles.action}
         />
         <AppButton label={`Falar com ${nome.split(' ')[0]}`} icon="phone-outline" variant="text" onPress={() => navigation.navigate('ContatoRapido', { idosoId, nome, telefone: leitura.telefone })} />
+        <AppButton label="Remover dos meus cuidados" icon="account-remove-outline" variant="danger" onPress={handleRemove} style={styles.removeButton} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -141,4 +163,5 @@ const styles = StyleSheet.create({
   subSaudacao: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, marginTop: 3 },
   readingsRow: { flexDirection: 'row', gap: 12, marginBottom: 28 },
   action: { marginTop: 12 },
+  removeButton: { marginTop: 22 },
 });

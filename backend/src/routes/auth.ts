@@ -11,7 +11,7 @@ import { serializeUser } from '../serializers.js';
 const registerSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
-  telefone: z.string().trim().min(10).max(20),
+  telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.'),
   senha: z.string().min(8).max(72),
   tipo: z.enum(['idoso', 'cuidador']),
 });

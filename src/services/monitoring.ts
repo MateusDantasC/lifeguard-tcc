@@ -15,6 +15,7 @@ type ApiReading = {
 
 type ApiElder = {
   id: string;
+  vinculoId?: string;
   nome: string;
   telefone: string | null;
   foto?: string | null;
@@ -38,6 +39,7 @@ export type Reading = ApiReading;
 export function mapElder(elder: ApiElder): Elder {
   return {
     id: elder.id,
+    vinculoId: elder.vinculoId,
     nome: elder.nome,
     telefone: elder.telefone ?? '',
     foto: elder.foto,

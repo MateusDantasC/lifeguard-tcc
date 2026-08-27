@@ -19,13 +19,16 @@ import ConfigurarLimitesScreen from '../screens/cuidador/ConfigurarLimitesScreen
 import VincularIdosoScreen from '../screens/cuidador/VincularIdosoScreen';
 import ContatoRapidoScreen from '../screens/cuidador/ContatoRapidoScreen';
 import { colors } from '../theme/theme';
+import { useAuthStore } from '../store/authStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
+  const user = useAuthStore((state) => state.user);
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={user?.tipo === 'idoso' ? 'HomeIdoso' : user?.tipo === 'cuidador' ? 'HomeCuidador' : 'Login'}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.sand },

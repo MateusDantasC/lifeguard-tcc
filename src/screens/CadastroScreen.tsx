@@ -11,6 +11,9 @@ import BackHeader from '../components/BackHeader';
 import InlineNotice from '../components/InlineNotice';
 import { apiRequest, ApiError } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import CountryPhoneInput from '../components/CountryPhoneInput';
+import { normalizePhone } from '../utils/phone';
+import type { CountryCode } from 'libphonenumber-js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cadastro'>;
 
@@ -18,6 +21,7 @@ export default function CadastroScreen({ navigation }: Props) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [pais, setPais] = useState<CountryCode>('BR');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -36,8 +40,9 @@ export default function CadastroScreen({ navigation }: Props) {
       setErro('Digite um e-mail válido.');
       return;
     }
-    if (telefone.replace(/\D/g, '').length < 10) {
-      setErro('Digite um telefone válido com DDD.');
+    const telefoneInternacional = normalizePhone(telefone, pais);
+    if (!telefoneInternacional) {
+      setErro('Digite um telefone válido para o país selecionado.');
       return;
     }
     if (senha.length < 8) {
@@ -52,7 +57,7 @@ export default function CadastroScreen({ navigation }: Props) {
     try {
       const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
         method: 'POST',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefone.trim(), senha, tipo: tipoConta }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefoneInternacional, senha, tipo: tipoConta }),
       });
       setSession(response.token, response.usuario);
       setErro('');
@@ -88,7 +93,7 @@ export default function CadastroScreen({ navigation }: Props) {
         <View style={styles.fields}>
           <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" required />
           <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
-          <AppTextInput label="Telefone com DDD" value={telefone} onChangeText={(value) => { setTelefone(value.slice(0, 20)); setErro(''); }} editable={!loading} autoComplete="tel" keyboardType="phone-pad" placeholder="(11) 99999-9999" required />
+          <CountryPhoneInput country={pais} onCountryChange={(value) => { setPais(value); setErro(''); }} value={telefone} onChangeText={(value) => { setTelefone(value); setErro(''); }} disabled={loading} />
           <AppTextInput
             label="Senha"
             value={senha}

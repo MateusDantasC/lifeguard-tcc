@@ -11,11 +11,11 @@ async function main() {
 
   const caregiver = await prisma.user.upsert({
     where: { email: 'ana@lifeguard.test' },
-    update: { passwordHash },
+    update: { passwordHash, phone: '+5511999990001' },
     create: {
       name: 'Ana Pereira',
       email: 'ana@lifeguard.test',
-      phone: '(11) 99999-0001',
+      phone: '+5511999990001',
       passwordHash,
       type: UserType.CAREGIVER,
     },
@@ -23,17 +23,17 @@ async function main() {
 
   const elder = await prisma.user.upsert({
     where: { email: 'maria@lifeguard.test' },
-    update: { passwordHash },
+    update: { passwordHash, phone: '+5511988881234' },
     create: {
       name: 'Maria Silva',
       email: 'maria@lifeguard.test',
-      phone: '(11) 98888-1234',
+      phone: '+5511988881234',
       passwordHash,
       type: UserType.ELDER,
       elderProfile: {
         create: {
           emergencyContactName: 'Ana Pereira',
-          emergencyContactPhone: '(11) 99999-0001',
+          emergencyContactPhone: '+5511999990001',
         },
       },
       alertLimits: {
@@ -58,7 +58,7 @@ async function main() {
       medications: 'Losartana 50 mg pela manhã',
       importantNotes: 'Usa óculos e pode precisar de ajuda para ler textos pequenos.',
       emergencyContactName: 'Ana Pereira',
-      emergencyContactPhone: '(11) 99999-0001',
+      emergencyContactPhone: '+5511999990001',
     },
     update: {
       birthDate: new Date('1954-04-12T12:00:00.000Z'),
@@ -68,7 +68,7 @@ async function main() {
       medications: 'Losartana 50 mg pela manhã',
       importantNotes: 'Usa óculos e pode precisar de ajuda para ler textos pequenos.',
       emergencyContactName: 'Ana Pereira',
-      emergencyContactPhone: '(11) 99999-0001',
+      emergencyContactPhone: '+5511999990001',
     },
   });
 

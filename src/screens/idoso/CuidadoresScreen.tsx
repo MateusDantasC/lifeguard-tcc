@@ -13,6 +13,7 @@ import { useMonitoringStore } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { apiRequest, ApiError } from '../../services/api';
 import { fetchCaregivers } from '../../services/monitoring';
+import { formatPhone, phoneUri } from '../../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cuidadores'>;
 
@@ -59,13 +60,14 @@ export default function CuidadoresScreen({ navigation }: Props) {
   }
 
   function handleLigar(nome: string, telefone: string) {
-    if (!telefone) {
+    const uri = phoneUri(telefone);
+    if (!uri) {
       Alert.alert('Telefone indisponível', `${nome} ainda não possui um telefone cadastrado.`);
       return;
     }
-    Alert.alert(`Ligar para ${nome}?`, telefone, [
+    Alert.alert(`Ligar para ${nome}?`, formatPhone(telefone), [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Ligar', onPress: () => void Linking.openURL(`tel:${telefone.replace(/\D/g, '')}`) },
+      { text: 'Ligar', onPress: () => void Linking.openURL(uri) },
     ]);
   }
 
@@ -95,7 +97,7 @@ export default function CuidadoresScreen({ navigation }: Props) {
             </View>
             <View style={styles.cuidadorInfo}>
               <Text style={styles.cuidadorNome}>{cuidador.nome}</Text>
-              <Text style={styles.cuidadorDesde}>{cuidador.telefone || 'Telefone não informado'} · {cuidador.vinculadoDesde}</Text>
+              <Text style={styles.cuidadorDesde}>{formatPhone(cuidador.telefone) || 'Telefone não informado'} · {cuidador.vinculadoDesde}</Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel={`Ligar para ${cuidador.nome}`} onPress={() => handleLigar(cuidador.nome, cuidador.telefone)} hitSlop={8} style={styles.callButton}>
               <MaterialCommunityIcons name="phone-outline" size={22} color={colors.coral} />

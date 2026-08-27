@@ -14,6 +14,7 @@ import AppButton from '../components/AppButton';
 import Card from '../components/Card';
 import { apiRequest, ApiError } from '../services/api';
 import { useMonitoringStore } from '../store/monitoringStore';
+import { formatPhone } from '../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
@@ -41,7 +42,7 @@ export default function PerfilScreen({ navigation }: Props) {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  const [telefone, setTelefone] = useState(user?.telefone ?? '');
+  const [telefone, setTelefone] = useState(formatPhone(user?.telefone));
   const [foto, setFoto] = useState<string | null>(user?.foto ?? null);
   const [dataNascimento, setDataNascimento] = useState(isoToBr(user?.perfilIdoso?.dataNascimento));
   const [tipoSanguineo, setTipoSanguineo] = useState(user?.perfilIdoso?.tipoSanguineo ?? '');
@@ -50,16 +51,16 @@ export default function PerfilScreen({ navigation }: Props) {
   const [condicoesMedicas, setCondicoesMedicas] = useState(user?.perfilIdoso?.condicoesMedicas ?? '');
   const [observacoes, setObservacoes] = useState(user?.perfilIdoso?.observacoesImportantes ?? '');
   const [contatoNome, setContatoNome] = useState(user?.perfilIdoso?.contatoEmergenciaNome ?? '');
-  const [contatoTelefone, setContatoTelefone] = useState(user?.perfilIdoso?.contatoEmergenciaTelefone ?? '');
+  const [contatoTelefone, setContatoTelefone] = useState(formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   function resetForm() {
-    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(user?.telefone ?? ''); setFoto(user?.foto ?? null);
+    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(formatPhone(user?.telefone)); setFoto(user?.foto ?? null);
     setDataNascimento(isoToBr(user?.perfilIdoso?.dataNascimento)); setTipoSanguineo(user?.perfilIdoso?.tipoSanguineo ?? '');
     setAlergias(user?.perfilIdoso?.alergias ?? ''); setMedicamentos(user?.perfilIdoso?.medicamentos ?? '');
     setCondicoesMedicas(user?.perfilIdoso?.condicoesMedicas ?? ''); setObservacoes(user?.perfilIdoso?.observacoesImportantes ?? '');
-    setContatoNome(user?.perfilIdoso?.contatoEmergenciaNome ?? ''); setContatoTelefone(user?.perfilIdoso?.contatoEmergenciaTelefone ?? '');
+    setContatoNome(user?.perfilIdoso?.contatoEmergenciaNome ?? ''); setContatoTelefone(formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone));
   }
 
   async function choosePhoto() {
@@ -144,7 +145,7 @@ export default function PerfilScreen({ navigation }: Props) {
             <AppTextInput label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" editable={!loading} />
           </> : <>
             <ProfileRow icon="email-outline" label="E-mail" value={user?.email ?? 'Não informado'} />
-            <ProfileRow icon="phone-outline" label="Telefone" value={user?.telefone || 'Não informado'} last />
+            <ProfileRow icon="phone-outline" label="Telefone" value={formatPhone(user?.telefone) || 'Não informado'} last />
           </>}</Card>
 
           {user?.tipo === 'idoso' ? <>
@@ -169,7 +170,7 @@ export default function PerfilScreen({ navigation }: Props) {
               <ProfileRow icon="allergy" label="Alergias" value={profile?.alergias || 'Não informado'} />
               <ProfileRow icon="pill" label="Medicamentos em uso" value={profile?.medicamentos || 'Não informado'} />
               <ProfileRow icon="alert-circle-outline" label="Observações importantes" value={profile?.observacoesImportantes || 'Não informado'} />
-              <ProfileRow icon="account-alert-outline" label="Contato de emergência" value={profile?.contatoEmergenciaNome && profile?.contatoEmergenciaTelefone ? `${profile.contatoEmergenciaNome} · ${profile.contatoEmergenciaTelefone}` : 'Não informado'} last />
+              <ProfileRow icon="account-alert-outline" label="Contato de emergência" value={profile?.contatoEmergenciaNome && profile?.contatoEmergenciaTelefone ? `${profile.contatoEmergenciaNome} · ${formatPhone(profile.contatoEmergenciaTelefone)}` : 'Não informado'} last />
             </>}</Card>
           </> : null}
 
