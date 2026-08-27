@@ -36,6 +36,10 @@ yarn-error.*
 !.env.example
 .env*.local
 .secrets/
+/.tools/
+/credentials.json
+/credentials/
+inst_user_settings.tmp
 
 # backend generated files
 backend/dist/

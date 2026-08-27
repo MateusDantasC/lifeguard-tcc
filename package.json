@@ -5,6 +5,9 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
+    "android:native": "expo run:android",
+    "apk:local": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-android-apk.ps1",
+    "apk:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/publish-android-apk.ps1",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
