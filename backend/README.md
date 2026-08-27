@@ -60,4 +60,22 @@ Essa regra é uma proteção técnica temporária, não uma validação clínica
 
 ## Implantação na Oracle
 
-O `Dockerfile` e o `compose.production.example.yml` deixam a API e o PostgreSQL prontos para uma VM Ubuntu na Oracle Cloud. Na implantação, copie o arquivo de produção, configure senhas fortes fora do Git, execute `npm run db:deploy` dentro do contêiner da API e coloque HTTPS na frente da porta 3333 antes de conectar o aplicativo.
+O `Dockerfile`, o `compose.production.example.yml` e o `Caddyfile` deixam a API, o PostgreSQL e o HTTPS prontos para uma VM Ubuntu na Oracle Cloud.
+
+Na VM, copie o arquivo de produção e crie um `.env` que não deve ser enviado ao Git:
+
+```env
+POSTGRES_PASSWORD=gere-uma-senha-alfanumerica-forte
+JWT_SECRET=gere-uma-chave-aleatoria-com-64-ou-mais-caracteres
+APP_ORIGIN=*
+PUBLIC_HOST=api.seu-dominio.com
+```
+
+Com as portas 80 e 443 liberadas e o domínio apontado para o IP público da VM, execute:
+
+```bash
+docker compose -f compose.production.yml up -d --build
+docker compose -f compose.production.yml exec api npm run db:seed
+```
+
+O contêiner da API aplica as migrations ao iniciar. O PostgreSQL não é publicado na internet; somente o Caddy recebe tráfego externo e encaminha as requisições para a API por HTTPS. Verifique a implantação em `https://api.seu-dominio.com/health`.

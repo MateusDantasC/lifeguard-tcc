@@ -26,8 +26,26 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3333
       APP_ORIGIN: ${APP_ORIGIN:-*}
+    expose:
+      - "3333"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
     ports:
-      - "3333:3333"
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - lifeguard_caddy_data:/data
+      - lifeguard_caddy_config:/config
 
 volumes:
   lifeguard_postgres_data:
+  lifeguard_caddy_data:
+  lifeguard_caddy_config:
