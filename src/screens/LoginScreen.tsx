@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
     if (!/^https?:\/\/\S+\/api$/.test(servidor.trim().replace(/\/+$/, ''))) {
-      setErro('Confira o endereço do servidor. Exemplo: http://172.27.246.157:3333/api');
+      setErro('Confira o endereço da API. Exemplo: https://api.exemplo.com/api');
       setMostrarServidor(true);
       return;
     }
@@ -51,7 +51,6 @@ export default function LoginScreen({ navigation }: Props) {
       setErro('');
       navigation.reset({ index: 0, routes: [{ name: response.usuario.tipo === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
     } catch (error) {
-      if (error instanceof ApiError && !error.status) setMostrarServidor(true);
       setErro(error instanceof ApiError ? error.message : 'Não foi possível entrar agora.');
     } finally {
       setLoading(false);
@@ -98,21 +97,21 @@ export default function LoginScreen({ navigation }: Props) {
 
           {mostrarServidor ? (
             <AppTextInput
-              label="Endereço do servidor local"
+              label="Endereço da API (avançado)"
               value={servidor}
               onChangeText={(value) => { setServidor(value); setErro(''); }}
               editable={!loading}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-              helperText="Use o IPv4 do computador conectado ao roteamento USB, seguido de :3333/api."
+              helperText="Altere somente para testes de desenvolvimento. O endereço deve terminar em /api."
             />
           ) : null}
 
           {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
           <AppButton label="Entrar" icon="login" onPress={handleLogin} loading={loading} />
-          <AppButton label={mostrarServidor ? 'Ocultar configuração do servidor' : 'Configurar conexão'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
+          <AppButton label={mostrarServidor ? 'Ocultar configuração avançada' : 'Configuração avançada'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
           <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} disabled={loading} style={styles.forgot} />
           <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou idoso maria@lifeguard.test. Senha: Teste123!" />
           <View style={styles.createAccount}>

@@ -1,4 +1,4 @@
-let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://172.27.246.157:3333/api';
+let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://152-67-44-170.sslip.io/api';
 
 let accessToken: string | null = null;
 
@@ -48,9 +48,9 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('A conexão com o servidor demorou demais. Confira se o computador e o celular estão na mesma rede.');
+      throw new ApiError('A conexão demorou demais. Confira sua internet e tente novamente.');
     }
-    throw new ApiError('Não foi possível conectar ao servidor. Confira se a API está ligada e se os aparelhos estão na mesma rede.');
+    throw new ApiError('Não foi possível conectar ao LifeGuard. Confira sua internet e tente novamente.');
   } finally {
     clearTimeout(timeout);
   }
