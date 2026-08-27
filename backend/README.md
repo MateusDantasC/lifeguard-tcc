@@ -16,7 +16,7 @@ docker compose up -d
 npm install
 npm run prisma:generate
 npm run db:migrate -- --name initial
-npm run db:seed
+npm run db:seed:build
 ```
 
 Inicie a API e o simulador em terminais separados:
