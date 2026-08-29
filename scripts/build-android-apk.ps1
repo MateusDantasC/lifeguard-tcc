@@ -4,8 +4,11 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $credentialsFile = Join-Path $projectRoot "credentials.json"
 $outputDirectory = Join-Path $projectRoot "dist"
 $outputApk = Join-Path $outputDirectory "lifeguard.apk"
+$packageJsonPath = Join-Path $projectRoot "package.json"
 $androidStudioJdk = "C:\Program Files\Android\Android Studio\jbr"
+$projectAndroidSdk = Join-Path $projectRoot ".tools\android-sdk"
 $defaultAndroidSdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
+$utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
 
 if (-not (Test-Path $credentialsFile)) {
     throw "credentials.json nao encontrado. Baixe a chave existente com: npx eas-cli credentials -p android"
@@ -19,7 +22,14 @@ if (-not (Test-Path $keystorePath)) {
     throw "Chave Android nao encontrada em $keystorePath"
 }
 
-if (Test-Path $androidStudioJdk) {
+$jdk17 = Get-ChildItem "C:\Program Files\Microsoft" -Directory -Filter "jdk-17*" -ErrorAction SilentlyContinue |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+
+if ($jdk17 -and (Test-Path (Join-Path $jdk17.FullName "bin\java.exe"))) {
+    $env:JAVA_HOME = $jdk17.FullName
+}
+elseif (Test-Path $androidStudioJdk) {
     $env:JAVA_HOME = $androidStudioJdk
 }
 
@@ -27,16 +37,21 @@ if (-not $env:JAVA_HOME -or -not (Test-Path (Join-Path $env:JAVA_HOME "bin\java.
     throw "JDK 17 ou superior nao encontrado. Conclua a instalacao do Android Studio."
 }
 
-if (-not $env:ANDROID_HOME) {
+if (Test-Path $projectAndroidSdk) {
+    $env:ANDROID_HOME = $projectAndroidSdk
+}
+elseif (-not $env:ANDROID_HOME) {
     $env:ANDROID_HOME = $defaultAndroidSdk
 }
 $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+$env:NODE_ENV = "production"
 
 if (-not (Test-Path $env:ANDROID_HOME)) {
     throw "Android SDK nao encontrado. Abra o Android Studio uma vez e conclua o Setup Wizard."
 }
 
 $env:Path = "$(Join-Path $env:JAVA_HOME 'bin');$(Join-Path $env:ANDROID_HOME 'platform-tools');$env:Path"
+$packageJsonBeforePrebuild = Get-Content $packageJsonPath -Raw
 
 Push-Location $projectRoot
 try {
@@ -44,16 +59,33 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar o projeto Android." }
 
     $sdkPath = $env:ANDROID_HOME.Replace("\", "/")
-    Set-Content -Path "android/local.properties" -Value "sdk.dir=$sdkPath" -Encoding utf8
+    [System.IO.File]::WriteAllText(
+        (Join-Path $projectRoot "android/local.properties"),
+        "sdk.dir=$sdkPath`n",
+        $utf8WithoutBom
+    )
 
     $gradleProperties = "android/gradle.properties"
-    Add-Content -Path $gradleProperties -Encoding utf8 -Value @"
+    $gradlePropertiesPath = Join-Path $projectRoot $gradleProperties
+    $gradlePropertiesContent = Get-Content $gradlePropertiesPath -Raw
+    $gradlePropertiesContent = $gradlePropertiesContent.Replace(
+        "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m",
+        "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+    )
+    [System.IO.File]::WriteAllText(
+        $gradlePropertiesPath,
+        $gradlePropertiesContent,
+        $utf8WithoutBom
+    )
+
+    [System.IO.File]::AppendAllText($gradlePropertiesPath, @"
 
 LIFEGUARD_UPLOAD_STORE_FILE=$($keystorePath.Replace('\', '/'))
 LIFEGUARD_UPLOAD_STORE_PASSWORD=$($keystore.keystorePassword)
 LIFEGUARD_UPLOAD_KEY_ALIAS=$($keystore.keyAlias)
 LIFEGUARD_UPLOAD_KEY_PASSWORD=$($keystore.keyPassword)
 "@
+    , $utf8WithoutBom)
 
     $buildGradlePath = "android/app/build.gradle"
     $buildGradle = Get-Content $buildGradlePath -Raw
@@ -82,7 +114,11 @@ $debugSigningBlock
     $buildGradle = $buildGradle.Replace($debugSigningBlock, $releaseSigningBlock)
     $buildGradle = $buildGradle.Replace("signingConfig signingConfigs.debug`r`n            def enableShrinkResources", "signingConfig signingConfigs.release`r`n            def enableShrinkResources")
     $buildGradle = $buildGradle.Replace("signingConfig signingConfigs.debug`n            def enableShrinkResources", "signingConfig signingConfigs.release`n            def enableShrinkResources")
-    Set-Content -Path $buildGradlePath -Value $buildGradle -Encoding utf8
+    [System.IO.File]::WriteAllText(
+        (Join-Path $projectRoot $buildGradlePath),
+        $buildGradle,
+        $utf8WithoutBom
+    )
 
     Push-Location "android"
     try {
@@ -95,7 +131,15 @@ $debugSigningBlock
 
     New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
     Copy-Item "android/app/build/outputs/apk/release/app-release.apk" $outputApk -Force
-    $hash = (Get-FileHash $outputApk -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $apkStream = [System.IO.File]::OpenRead($outputApk)
+    try {
+        $hash = ([System.BitConverter]::ToString($sha256.ComputeHash($apkStream))).Replace("-", "").ToLowerInvariant()
+    }
+    finally {
+        $apkStream.Dispose()
+        $sha256.Dispose()
+    }
     Set-Content -Path "$outputApk.sha256" -Value "$hash  lifeguard.apk" -Encoding ascii
 
     Write-Host ""
@@ -103,5 +147,10 @@ $debugSigningBlock
     Write-Host "SHA-256: $hash"
 }
 finally {
+    [System.IO.File]::WriteAllText(
+        $packageJsonPath,
+        $packageJsonBeforePrebuild,
+        $utf8WithoutBom
+    )
     Pop-Location
 }

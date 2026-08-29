@@ -4,7 +4,7 @@ O APK de distribuição funciona sem Expo Go, sem `npm start` e sem o computador
 
 ## Gerar sem a fila do Expo
 
-Na primeira utilização, instale o Android Studio e conclua o Setup Wizard para instalar o Android SDK. A chave original de assinatura deve estar nos arquivos locais ignorados pelo Git:
+Na primeira utilização, instale o Android Studio e o JDK 17. O SDK usado pelo comando fica em `.tools/android-sdk`, pasta privada ignorada pelo Git. A chave original de assinatura deve estar nos arquivos locais também ignorados pelo Git:
 
 - `credentials.json`
 - `credentials/android/keystore.jks`
