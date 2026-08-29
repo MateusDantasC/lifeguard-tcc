@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { usePreventRemove } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { useAuthStore, type ElderProfile } from '../store/authStore';
+import { useAuthStore, type ElderProfile, type Gender } from '../store/authStore';
 import { colors, fonts } from '../theme/theme';
 import BackHeader from '../components/BackHeader';
 import AppTextInput from '../components/AppTextInput';
@@ -15,6 +16,7 @@ import Card from '../components/Card';
 import { apiRequest, ApiError } from '../services/api';
 import { useMonitoringStore } from '../store/monitoringStore';
 import { formatPhone } from '../utils/phone';
+import GenderSelector, { formatGender } from '../components/GenderSelector';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
@@ -44,6 +46,7 @@ export default function PerfilScreen({ navigation }: Props) {
   const [email, setEmail] = useState(user?.email ?? '');
   const [telefone, setTelefone] = useState(formatPhone(user?.telefone));
   const [foto, setFoto] = useState<string | null>(user?.foto ?? null);
+  const [genero, setGenero] = useState<Gender | null>(user?.genero ?? null);
   const [dataNascimento, setDataNascimento] = useState(isoToBr(user?.perfilIdoso?.dataNascimento));
   const [tipoSanguineo, setTipoSanguineo] = useState(user?.perfilIdoso?.tipoSanguineo ?? '');
   const [alergias, setAlergias] = useState(user?.perfilIdoso?.alergias ?? '');
@@ -55,8 +58,35 @@ export default function PerfilScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const hasUnsavedChanges = editing && (
+    nome !== (user?.nome ?? '')
+    || email !== (user?.email ?? '')
+    || telefone !== formatPhone(user?.telefone)
+    || foto !== (user?.foto ?? null)
+    || genero !== (user?.genero ?? null)
+    || dataNascimento !== isoToBr(user?.perfilIdoso?.dataNascimento)
+    || tipoSanguineo !== (user?.perfilIdoso?.tipoSanguineo ?? '')
+    || alergias !== (user?.perfilIdoso?.alergias ?? '')
+    || medicamentos !== (user?.perfilIdoso?.medicamentos ?? '')
+    || condicoesMedicas !== (user?.perfilIdoso?.condicoesMedicas ?? '')
+    || observacoes !== (user?.perfilIdoso?.observacoesImportantes ?? '')
+    || contatoNome !== (user?.perfilIdoso?.contatoEmergenciaNome ?? '')
+    || contatoTelefone !== formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone)
+  );
+
+  usePreventRemove(hasUnsavedChanges, ({ data }) => {
+    Alert.alert(
+      'Alterações não salvas',
+      'Você fez alterações no perfil. Deseja descartá-las e sair?',
+      [
+        { text: 'Continuar editando', style: 'cancel' },
+        { text: 'Descartar alterações', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+      ],
+    );
+  });
+
   function resetForm() {
-    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(formatPhone(user?.telefone)); setFoto(user?.foto ?? null);
+    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(formatPhone(user?.telefone)); setFoto(user?.foto ?? null); setGenero(user?.genero ?? null);
     setDataNascimento(isoToBr(user?.perfilIdoso?.dataNascimento)); setTipoSanguineo(user?.perfilIdoso?.tipoSanguineo ?? '');
     setAlergias(user?.perfilIdoso?.alergias ?? ''); setMedicamentos(user?.perfilIdoso?.medicamentos ?? '');
     setCondicoesMedicas(user?.perfilIdoso?.condicoesMedicas ?? ''); setObservacoes(user?.perfilIdoso?.observacoesImportantes ?? '');
@@ -88,6 +118,9 @@ export default function PerfilScreen({ navigation }: Props) {
     if (!nome.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
       setError('Confira seu nome e e-mail antes de salvar.'); return;
     }
+    if (!genero) {
+      setError('Selecione seu gênero antes de salvar.'); return;
+    }
     const birthDate = brToIso(dataNascimento);
     if (birthDate === undefined) {
       setError('Informe a data de nascimento no formato DD/MM/AAAA.'); return;
@@ -106,7 +139,7 @@ export default function PerfilScreen({ navigation }: Props) {
     try {
       const response = await apiRequest<{ usuario: NonNullable<typeof user> }>('/auth/me', {
         method: 'PATCH',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefone.trim() || null, foto, ...(perfilIdoso ? { perfilIdoso } : {}) }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefone.trim() || null, foto, genero, ...(perfilIdoso ? { perfilIdoso } : {}) }),
       });
       updateUser(response.usuario);
       setError(''); setEditing(false);
@@ -114,6 +147,27 @@ export default function PerfilScreen({ navigation }: Props) {
     } catch (requestError) {
       setError(requestError instanceof ApiError ? requestError.message : 'Não foi possível salvar o perfil.');
     } finally { setLoading(false); }
+  }
+
+  function discardEditing() {
+    resetForm();
+    setEditing(false);
+    setError('');
+  }
+
+  function handleCancelEditing() {
+    if (!hasUnsavedChanges) {
+      discardEditing();
+      return;
+    }
+    Alert.alert(
+      'Alterações não salvas',
+      'Você fez alterações no perfil. Deseja descartá-las?',
+      [
+        { text: 'Continuar editando', style: 'cancel' },
+        { text: 'Descartar alterações', style: 'destructive', onPress: discardEditing },
+      ],
+    );
   }
 
   function handleLogout() {
@@ -143,9 +197,11 @@ export default function PerfilScreen({ navigation }: Props) {
             <AppTextInput label="Nome completo" value={nome} onChangeText={setNome} editable={!loading} required />
             <AppTextInput label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!loading} required />
             <AppTextInput label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" editable={!loading} />
+            <GenderSelector value={genero} onChange={setGenero} disabled={loading} required />
           </> : <>
             <ProfileRow icon="email-outline" label="E-mail" value={user?.email ?? 'Não informado'} />
-            <ProfileRow icon="phone-outline" label="Telefone" value={formatPhone(user?.telefone) || 'Não informado'} last />
+            <ProfileRow icon="phone-outline" label="Telefone" value={formatPhone(user?.telefone) || 'Não informado'} />
+            <ProfileRow icon="account-details-outline" label="Gênero" value={formatGender(user?.genero)} last />
           </>}</Card>
 
           {user?.tipo === 'idoso' ? <>
@@ -177,7 +233,7 @@ export default function PerfilScreen({ navigation }: Props) {
           {editing ? <>
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
             <AppButton label="Salvar alterações" icon="content-save-outline" onPress={handleSave} loading={loading} disabled={loading} />
-            <AppButton label="Cancelar" variant="text" disabled={loading} onPress={() => { resetForm(); setEditing(false); setError(''); }} />
+            <AppButton label="Cancelar" variant="text" disabled={loading} onPress={handleCancelEditing} />
           </> : <AppButton label="Sair da conta" icon="logout" variant="secondary" onPress={handleLogout} />}
         </ScrollView>
       </KeyboardAvoidingView>

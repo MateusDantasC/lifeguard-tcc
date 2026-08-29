@@ -5,7 +5,7 @@ import { AlertStatus, LinkStatus, UserType } from '../generated/prisma/enums.js'
 import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
-import { serializeElderProfile } from '../serializers.js';
+import { serializeElderProfile, serializeGender } from '../serializers.js';
 
 const idSchema = z.uuid();
 const limitsSchema = z.object({
@@ -145,6 +145,7 @@ monitoringRouter.get('/idosos/:idosoId', async (req, res) => {
       nome: elder.name,
       telefone: elder.phone,
       foto: elder.profilePhoto,
+      genero: serializeGender(elder.gender),
       perfilIdoso: serializeElderProfile(elder.elderProfile),
       contatoEmergencia: elder.elderProfile
         ? {

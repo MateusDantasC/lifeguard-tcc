@@ -2,7 +2,7 @@ import { compare, hash } from 'bcryptjs';
 import { Router } from 'express';
 import { z } from 'zod';
 import { createAccessToken } from '../auth/token.js';
-import { UserType } from '../generated/prisma/enums.js';
+import { Gender, UserType } from '../generated/prisma/enums.js';
 import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -12,6 +12,7 @@ const registerSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
   telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.'),
+  genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']),
   senha: z.string().min(8).max(72),
   tipo: z.enum(['idoso', 'cuidador']),
 });
@@ -26,6 +27,7 @@ const updateProfileSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   telefone: z.string().trim().min(8).max(20).nullable().optional(),
   foto: z.string().max(750_000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/).nullable().optional(),
+  genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']).nullable().optional(),
   perfilIdoso: z.object({
     dataNascimento: z.iso.date().nullable().optional(),
     tipoSanguineo: z.string().trim().max(5).nullable().optional(),
@@ -40,6 +42,14 @@ const updateProfileSchema = z.object({
 
 export const authRouter = Router();
 
+const genderMap = {
+  feminino: Gender.FEMALE,
+  masculino: Gender.MALE,
+  nao_binario: Gender.NON_BINARY,
+  outro: Gender.OTHER,
+  prefiro_nao_informar: Gender.PREFER_NOT_TO_SAY,
+} as const;
+
 authRouter.post('/cadastro', async (req, res) => {
   const input = registerSchema.parse(req.body);
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
@@ -52,6 +62,7 @@ authRouter.post('/cadastro', async (req, res) => {
       name: input.nome,
       email: input.email,
       phone: input.telefone,
+      gender: genderMap[input.genero],
       passwordHash: await hash(input.senha, 12),
       type,
       ...(type === UserType.ELDER
@@ -120,6 +131,7 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
       name: input.nome,
       email: input.email,
       phone: input.telefone || null,
+      ...(input.genero !== undefined ? { gender: input.genero ? genderMap[input.genero] : null } : {}),
       ...(input.foto !== undefined ? { profilePhoto: input.foto } : {}),
       ...(profileData ? { elderProfile: { upsert: { create: profileData, update: profileData } } } : {}),
     },

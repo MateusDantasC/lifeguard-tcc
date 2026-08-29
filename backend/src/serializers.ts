@@ -1,5 +1,16 @@
 import type { ElderProfile, User } from './generated/prisma/client.js';
-import { UserType } from './generated/prisma/enums.js';
+import { Gender, UserType } from './generated/prisma/enums.js';
+
+export function serializeGender(gender?: Gender | null) {
+  if (!gender) return null;
+  return {
+    [Gender.FEMALE]: 'feminino',
+    [Gender.MALE]: 'masculino',
+    [Gender.NON_BINARY]: 'nao_binario',
+    [Gender.OTHER]: 'outro',
+    [Gender.PREFER_NOT_TO_SAY]: 'prefiro_nao_informar',
+  }[gender];
+}
 
 export function serializeElderProfile(profile?: ElderProfile | null) {
   if (!profile) return null;
@@ -16,7 +27,7 @@ export function serializeElderProfile(profile?: ElderProfile | null) {
 }
 
 export function serializeUser(
-  user: Pick<User, 'id' | 'name' | 'email' | 'phone' | 'type' | 'profilePhoto'>,
+  user: Pick<User, 'id' | 'name' | 'email' | 'phone' | 'type' | 'profilePhoto' | 'gender'>,
   elderProfile?: ElderProfile | null,
 ) {
   return {
@@ -25,6 +36,7 @@ export function serializeUser(
     email: user.email,
     telefone: user.phone,
     foto: user.profilePhoto,
+    genero: serializeGender(user.gender),
     tipo: user.type === UserType.ELDER ? 'idoso' : 'cuidador',
     perfilIdoso: user.type === UserType.ELDER ? serializeElderProfile(elderProfile) : null,
   };

@@ -15,12 +15,15 @@ export type ElderProfile = {
   contatoEmergenciaTelefone?: string | null;
 };
 
+export type Gender = 'feminino' | 'masculino' | 'nao_binario' | 'outro' | 'prefiro_nao_informar';
+
 export type AuthUser = {
     id: string;
     nome: string;
     email: string;
     telefone?: string | null;
     foto?: string | null;
+    genero?: Gender | null;
     tipo: 'idoso' | 'cuidador';
     perfilIdoso?: ElderProfile | null;
 };

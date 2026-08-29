@@ -2,7 +2,7 @@ import { hash } from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from '../src/config/env.js';
 import { PrismaClient } from '../src/generated/prisma/client.js';
-import { LinkStatus, UserType } from '../src/generated/prisma/enums.js';
+import { Gender, LinkStatus, UserType } from '../src/generated/prisma/enums.js';
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
 
@@ -11,11 +11,12 @@ async function main() {
 
   const caregiver = await prisma.user.upsert({
     where: { email: 'ana@lifeguard.test' },
-    update: { passwordHash, phone: '+5511999990001' },
+    update: { passwordHash, phone: '+5511999990001', gender: Gender.FEMALE },
     create: {
       name: 'Ana Pereira',
       email: 'ana@lifeguard.test',
       phone: '+5511999990001',
+      gender: Gender.FEMALE,
       passwordHash,
       type: UserType.CAREGIVER,
     },
@@ -23,11 +24,12 @@ async function main() {
 
   const elder = await prisma.user.upsert({
     where: { email: 'maria@lifeguard.test' },
-    update: { passwordHash, phone: '+5511988881234' },
+    update: { passwordHash, phone: '+5511988881234', gender: Gender.FEMALE },
     create: {
       name: 'Maria Silva',
       email: 'maria@lifeguard.test',
       phone: '+5511988881234',
+      gender: Gender.FEMALE,
       passwordHash,
       type: UserType.ELDER,
       elderProfile: {

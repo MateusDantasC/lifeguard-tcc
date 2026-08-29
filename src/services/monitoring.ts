@@ -1,6 +1,6 @@
 import { apiRequest, formatDateTime, formatRelativeTime } from './api';
 import type { AlertLimits, Caregiver, Elder, MonitoringAlert } from '../store/monitoringStore';
-import type { ElderProfile } from '../store/authStore';
+import type { ElderProfile, Gender } from '../store/authStore';
 
 type ApiReading = {
   id: string;
@@ -19,6 +19,7 @@ type ApiElder = {
   nome: string;
   telefone: string | null;
   foto?: string | null;
+  genero?: Gender | null;
   perfilIdoso?: ElderProfile | null;
   status: Elder['status'];
   ultimaLeitura: ApiReading | null;
@@ -43,6 +44,7 @@ export function mapElder(elder: ApiElder): Elder {
     nome: elder.nome,
     telefone: elder.telefone ?? '',
     foto: elder.foto,
+    genero: elder.genero,
     perfilIdoso: elder.perfilIdoso,
     status: elder.status,
     batimento: elder.ultimaLeitura?.valida ? elder.ultimaLeitura.batimento : null,

@@ -10,8 +10,9 @@ import SegmentedToggle from '../components/SegmentedToggle';
 import BackHeader from '../components/BackHeader';
 import InlineNotice from '../components/InlineNotice';
 import { apiRequest, ApiError } from '../services/api';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore, type Gender } from '../store/authStore';
 import CountryPhoneInput from '../components/CountryPhoneInput';
+import GenderSelector from '../components/GenderSelector';
 import { normalizePhone } from '../utils/phone';
 import type { CountryCode } from 'libphonenumber-js';
 
@@ -22,6 +23,7 @@ export default function CadastroScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
   const [pais, setPais] = useState<CountryCode>('BR');
+  const [genero, setGenero] = useState<Gender | null>(null);
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -32,7 +34,7 @@ export default function CadastroScreen({ navigation }: Props) {
   const setSession = useAuthStore((state) => state.setSession);
 
   async function handleCadastro() {
-    if (!nome.trim() || !email.trim() || !telefone.trim() || !senha || !confirmarSenha) {
+    if (!nome.trim() || !email.trim() || !telefone.trim() || !genero || !senha || !confirmarSenha) {
       setErro('Preencha todos os campos.');
       return;
     }
@@ -57,7 +59,7 @@ export default function CadastroScreen({ navigation }: Props) {
     try {
       const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
         method: 'POST',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefoneInternacional, senha, tipo: tipoConta }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefoneInternacional, genero, senha, tipo: tipoConta }),
       });
       setSession(response.token, response.usuario);
       setErro('');
@@ -92,6 +94,7 @@ export default function CadastroScreen({ navigation }: Props) {
 
         <View style={styles.fields}>
           <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" required />
+          <GenderSelector value={genero} onChange={(value) => { setGenero(value); setErro(''); }} disabled={loading} required />
           <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
           <CountryPhoneInput country={pais} onCountryChange={(value) => { setPais(value); setErro(''); }} value={telefone} onChangeText={(value) => { setTelefone(value); setErro(''); }} disabled={loading} />
           <AppTextInput

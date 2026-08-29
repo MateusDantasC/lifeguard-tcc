@@ -12,6 +12,14 @@ enum UserType {
   CAREGIVER
 }
 
+enum Gender {
+  FEMALE
+  MALE
+  NON_BINARY
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 enum LinkStatus {
   PENDING
   ACTIVE
@@ -58,6 +66,7 @@ model User {
   passwordHash           String
   type                   UserType
   profilePhoto           String?              @db.Text
+  gender                 Gender?
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   elderProfile           ElderProfile?

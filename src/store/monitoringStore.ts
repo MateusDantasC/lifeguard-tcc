@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { StatusKey } from '../theme/theme';
-import type { ElderProfile } from './authStore';
+import type { ElderProfile, Gender } from './authStore';
 
 export type Elder = {
   id: string;
@@ -11,6 +11,7 @@ export type Elder = {
   temperatura: number | null;
   telefone: string;
   foto?: string | null;
+  genero?: Gender | null;
   perfilIdoso?: ElderProfile | null;
   ultimaAtualizacao: string;
 };

@@ -16,6 +16,7 @@ import { fetchElder } from '../../services/monitoring';
 import { apiRequest, ApiError } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import { formatPhone } from '../../utils/phone';
+import { formatGender } from '../../components/GenderSelector';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalheIdoso'>;
 
@@ -90,6 +91,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
           </View>
           <View style={styles.infoGrid}>
             <PatientInfo icon="calendar-outline" label="Nascimento" value={formatBirthDate(profile?.dataNascimento)} />
+            <PatientInfo icon="account-details-outline" label="Gênero" value={formatGender(leitura.genero)} />
             <PatientInfo icon="water-outline" label="Tipo sanguíneo" value={profile?.tipoSanguineo || 'Não informado'} />
             <PatientInfo icon="medical-bag" label="Condições médicas" value={profile?.condicoesMedicas || 'Não informado'} />
             <PatientInfo icon="allergy" label="Alergias" value={profile?.alergias || 'Não informado'} />

@@ -1,0 +1,3 @@
+CREATE TYPE "Gender" AS ENUM ('FEMALE', 'MALE', 'NON_BINARY', 'OTHER', 'PREFER_NOT_TO_SAY');
+
+ALTER TABLE "User" ADD COLUMN "gender" "Gender";
