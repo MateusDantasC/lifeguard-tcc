@@ -9,7 +9,6 @@ import {
   AtkinsonHyperlegible_700Bold,
 } from '@expo-google-fonts/atkinson-hyperlegible';
 import AppNavigator from './src/navigation/AppNavigator';
-import * as Updates from 'expo-updates';
 import { useAuthStore } from './src/store/authStore';
 import { apiRequest, ApiError } from './src/services/api';
 import type { AuthUser } from './src/store/authStore';
@@ -18,7 +17,6 @@ SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 450, fade: true });
 
 const STARTUP_TIMEOUT_MS = 4_000;
-const UPDATE_TIMEOUT_MS = 8_000;
 
 async function waitAtMost<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -82,27 +80,6 @@ export default function App() {
   useEffect(() => {
     if (appReady) void SplashScreen.hideAsync();
   }, [appReady]);
-
-  useEffect(() => {
-    if (!bootstrapped || !Updates.isEnabled) return;
-
-    let active = true;
-
-    async function checkForUpdate() {
-      try {
-        const update = await waitAtMost(Updates.checkForUpdateAsync(), UPDATE_TIMEOUT_MS);
-        if (!active || !update?.isAvailable) return;
-
-        const fetched = await waitAtMost(Updates.fetchUpdateAsync(), UPDATE_TIMEOUT_MS);
-        if (active && fetched) await Updates.reloadAsync();
-      } catch {
-        // A versão instalada continua funcionando normalmente sem internet.
-      }
-    }
-
-    void checkForUpdate();
-    return () => { active = false; };
-  }, [bootstrapped]);
 
   if (!appReady) return null;
 

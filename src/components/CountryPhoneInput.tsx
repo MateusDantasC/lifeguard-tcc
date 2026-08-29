@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCountries, getCountryCallingCode, type CountryCode } from 'libphonenumber-js';
+import * as isoCountries from 'i18n-iso-countries';
+import ptLocale from 'i18n-iso-countries/langs/pt.json';
 import { colors, fonts, radii } from '../theme/theme';
 import { flagForCountry, formatNationalPhone } from '../utils/phone';
 
@@ -14,10 +16,15 @@ type Props = {
   error?: string;
 };
 
-const displayNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+isoCountries.registerLocale(ptLocale);
+
+function countryName(code: CountryCode) {
+  return isoCountries.getName(code, 'pt', { select: 'official' }) ?? code;
+}
+
 const countries = getCountries().map((code) => ({
   code,
-  name: displayNames.of(code) ?? code,
+  name: countryName(code),
   callingCode: getCountryCallingCode(code),
 })).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
@@ -46,7 +53,7 @@ export default function CountryPhoneInput({ country, onCountryChange, value, onC
     <View style={styles.wrapper}>
       <Text style={styles.label}>Telefone <Text style={styles.required}>*</Text></Text>
       <View style={[styles.shell, error && styles.shellError, disabled && styles.disabled]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Selecionar país, atual ${displayNames.of(country)}, mais ${callingCode}`} disabled={disabled} onPress={() => setVisible(true)} style={styles.countryButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Selecionar país, atual ${countryName(country)}, mais ${callingCode}`} disabled={disabled} onPress={() => setVisible(true)} style={styles.countryButton}>
           <Text style={styles.flag}>{flagForCountry(country)}</Text>
           <Text style={styles.callingCode}>+{callingCode}</Text>
           <MaterialCommunityIcons name="chevron-down" size={18} color={colors.textSecondary} />

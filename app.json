@@ -3,7 +3,7 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.mdantasc.lifeguard",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/lifeguard-mark.png",
         "backgroundColor": "#1B3A3F"
@@ -64,13 +64,6 @@
         "projectId": "92c95f11-213c-4abb-80d7-530ac17bfcdb"
       }
     },
-    "owner": "mdantasc",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/92c95f11-213c-4abb-80d7-530ac17bfcdb",
-      "checkAutomatically": "NEVER"
-    }
+    "owner": "mdantasc"
   }
 }
