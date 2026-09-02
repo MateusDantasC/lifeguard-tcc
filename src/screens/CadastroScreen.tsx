@@ -15,6 +15,9 @@ import CountryPhoneInput from '../components/CountryPhoneInput';
 import GenderSelector from '../components/GenderSelector';
 import { normalizePhone } from '../utils/phone';
 import type { CountryCode } from 'libphonenumber-js';
+import PasswordRequirements from '../components/PasswordRequirements';
+import ConsentCheckbox from '../components/ConsentCheckbox';
+import { isStrongPassword, isValidEmail, passwordValidationMessage } from '../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cadastro'>;
 
@@ -29,6 +32,8 @@ export default function CadastroScreen({ navigation }: Props) {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
+  const [aceitouDocumentos, setAceitouDocumentos] = useState(false);
+  const [consentError, setConsentError] = useState(false);
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
@@ -38,7 +43,7 @@ export default function CadastroScreen({ navigation }: Props) {
       setErro('Preencha todos os campos.');
       return;
     }
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+    if (!isValidEmail(email)) {
       setErro('Digite um e-mail válido.');
       return;
     }
@@ -47,19 +52,33 @@ export default function CadastroScreen({ navigation }: Props) {
       setErro('Digite um telefone válido para o país selecionado.');
       return;
     }
-    if (senha.length < 8) {
-      setErro('A senha deve ter pelo menos 8 caracteres.');
+    if (!isStrongPassword(senha)) {
+      setErro(passwordValidationMessage(senha) ?? 'Escolha uma senha mais segura.');
       return;
     }
     if (senha !== confirmarSenha) {
       setErro('As senhas não coincidem.');
       return;
     }
+    if (!aceitouDocumentos) {
+      setConsentError(true);
+      setErro('Leia e aceite os Termos de Uso e a Política de Privacidade para criar a conta.');
+      return;
+    }
     setLoading(true);
     try {
       const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
         method: 'POST',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim(), telefone: telefoneInternacional, genero, senha, tipo: tipoConta }),
+        body: JSON.stringify({
+          nome: nome.trim(),
+          email: email.trim().toLowerCase(),
+          telefone: telefoneInternacional,
+          genero,
+          senha,
+          tipo: tipoConta,
+          aceitouTermos: true,
+          aceitouPrivacidade: true,
+        }),
       });
       setSession(response.token, response.usuario);
       setErro('');
@@ -77,8 +96,14 @@ export default function CadastroScreen({ navigation }: Props) {
       <BackHeader title="Criar conta" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.titulo}>Bem-vindo ao LifeGuard</Text>
-        <Text style={styles.tagline}>Escolha seu tipo de conta e preencha seus dados.</Text>
+        <View style={styles.intro}>
+          <View style={styles.introLine} />
+          <View style={styles.introCopy}>
+            <Text style={styles.kicker}>COMECE SUA REDE DE CUIDADO</Text>
+            <Text style={styles.titulo}>Sua conta LifeGuard</Text>
+            <Text style={styles.tagline}>Escolha como você usa o aplicativo e preencha seus dados.</Text>
+          </View>
+        </View>
 
         <SegmentedToggle
           value={tipoConta}
@@ -93,9 +118,9 @@ export default function CadastroScreen({ navigation }: Props) {
         <InlineNotice message={tipoConta === 'idoso' ? 'Você poderá acompanhar seus sinais e compartilhar o cuidado com pessoas de confiança.' : 'Você poderá acompanhar idosos vinculados e configurar os limites de alerta.'} />
 
         <View style={styles.fields}>
-          <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" required />
+          <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" maxLength={100} required />
           <GenderSelector value={genero} onChange={(value) => { setGenero(value); setErro(''); }} disabled={loading} required />
-          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" required />
+          <AppTextInput label="E-mail" value={email} onChangeText={(value) => { setEmail(value); setErro(''); }} editable={!loading} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="nome@email.com" maxLength={254} required />
           <CountryPhoneInput country={pais} onCountryChange={(value) => { setPais(value); setErro(''); }} value={telefone} onChangeText={(value) => { setTelefone(value); setErro(''); }} disabled={loading} />
           <AppTextInput
             label="Senha"
@@ -107,9 +132,11 @@ export default function CadastroScreen({ navigation }: Props) {
             rightIconLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
             onRightIconPress={() => setMostrarSenha((value) => !value)}
             autoComplete="new-password"
+            maxLength={72}
             placeholder="Pelo menos 8 caracteres"
             required
           />
+          <PasswordRequirements password={senha} />
           <AppTextInput
             label="Confirmar senha"
             value={confirmarSenha}
@@ -120,11 +147,21 @@ export default function CadastroScreen({ navigation }: Props) {
             rightIconLabel={mostrarConfirmacao ? 'Ocultar confirmação da senha' : 'Mostrar confirmação da senha'}
             onRightIconPress={() => setMostrarConfirmacao((value) => !value)}
             placeholder="Repita sua senha"
+            maxLength={72}
             returnKeyType="done"
             onSubmitEditing={handleCadastro}
             required
           />
         </View>
+
+        <ConsentCheckbox
+          checked={aceitouDocumentos}
+          disabled={loading}
+          error={consentError}
+          onChange={(checked) => { setAceitouDocumentos(checked); setConsentError(false); setErro(''); }}
+          onTermsPress={() => navigation.navigate('DocumentoLegal', { tipo: 'termos' })}
+          onPrivacyPress={() => navigation.navigate('DocumentoLegal', { tipo: 'privacidade' })}
+        />
 
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
@@ -140,8 +177,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 40 },
-  titulo: { fontFamily: fonts.display, fontSize: 28, color: colors.ink, textAlign: 'center' },
-  tagline: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.textSecondary, textAlign: 'center', marginTop: 6, marginBottom: 22 },
+  intro: { flexDirection: 'row', gap: 14, marginTop: 8, marginBottom: 24 },
+  introLine: { width: 4, borderRadius: 2, backgroundColor: colors.coral },
+  introCopy: { flex: 1 },
+  kicker: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 1.3, color: colors.coral, marginBottom: 5 },
+  titulo: { fontFamily: fonts.display, fontSize: 28, color: colors.ink },
+  tagline: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.textSecondary, marginTop: 5 },
   fields: { marginTop: 20 },
   erro: { fontFamily: fonts.body, color: colors.emberText, marginBottom: 12, fontSize: 14 },
 });

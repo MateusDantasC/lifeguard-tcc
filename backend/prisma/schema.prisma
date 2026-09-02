@@ -67,6 +67,9 @@ model User {
   type                   UserType
   profilePhoto           String?              @db.Text
   gender                 Gender?
+  termsAcceptedAt        DateTime?
+  privacyAcceptedAt      DateTime?
+  legalDocumentVersion   String?
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   elderProfile           ElderProfile?

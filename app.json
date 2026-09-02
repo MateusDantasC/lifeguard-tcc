@@ -3,7 +3,7 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.mdantasc.lifeguard",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/lifeguard-mark.png",
         "backgroundColor": "#1B3A3F"

@@ -84,7 +84,7 @@ export default function CuidadoresScreen({ navigation }: Props) {
           <Card style={styles.codeCard}>
             <Text style={styles.codeLabel}>Seu código temporário</Text>
             <Text accessibilityLabel={`Código ${codigo.split('').join(' ')}`} style={styles.code}>{codigo}</Text>
-            <Text style={styles.codeHint}>Válido por 10 minutos · compartilhe apenas com alguém de confiança</Text>
+            <Text style={styles.codeHint}>Válido por 15 minutos · compartilhe apenas com alguém de confiança</Text>
           </Card>
         ) : null}
 

@@ -17,6 +17,8 @@ export const colors = {
   border: 'rgba(27,58,63,0.18)',
   borderStrong: 'rgba(27,58,63,0.25)',
   inkSoft: '#31565B',
+  inkMist: '#E9EFED',
+  sandDeep: '#EDE4D4',
   coralSoft: '#FCE8DF',
   white: '#FFFFFF',
   transparent: 'transparent',

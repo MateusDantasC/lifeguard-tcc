@@ -112,6 +112,7 @@ monitoringRouter.get('/idosos', async (req, res) => {
       vinculoId: linkId,
       nome: elder.name,
       telefone: elder.phone,
+      foto: elder.profilePhoto,
       status: classifyReading(latest, limits),
       ultimaLeitura: serializeReading(latest),
     };

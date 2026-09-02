@@ -14,6 +14,8 @@ type Props = {
   onChangeText: (value: string) => void;
   disabled?: boolean;
   error?: string;
+  required?: boolean;
+  helperText?: string;
 };
 
 isoCountries.registerLocale(ptLocale);
@@ -32,7 +34,7 @@ function normalizeSearch(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-export default function CountryPhoneInput({ country, onCountryChange, value, onChangeText, disabled, error }: Props) {
+export default function CountryPhoneInput({ country, onCountryChange, value, onChangeText, disabled, error, required = true, helperText }: Props) {
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
   const callingCode = getCountryCallingCode(country);
@@ -51,7 +53,7 @@ export default function CountryPhoneInput({ country, onCountryChange, value, onC
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>Telefone <Text style={styles.required}>*</Text></Text>
+      <Text style={styles.label}>Telefone {required ? <Text style={styles.required}>*</Text> : null}</Text>
       <View style={[styles.shell, error && styles.shellError, disabled && styles.disabled]}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Selecionar país, atual ${countryName(country)}, mais ${callingCode}`} disabled={disabled} onPress={() => setVisible(true)} style={styles.countryButton}>
           <Text style={styles.flag}>{flagForCountry(country)}</Text>
@@ -72,7 +74,7 @@ export default function CountryPhoneInput({ country, onCountryChange, value, onC
           style={styles.input}
         />
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.helper}>Selecione o país; o código internacional será salvo automaticamente.</Text>}
+      {error ? <Text style={styles.error}>{error}</Text> : <Text style={styles.helper}>{helperText ?? 'Selecione o país; o código internacional será salvo automaticamente.'}</Text>}
 
       <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
         <SafeAreaView style={styles.modalSafe}>

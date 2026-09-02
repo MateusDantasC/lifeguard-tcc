@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
+import { Image, ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { fetchCaregiverDashboard } from '../../services/monitoring';
 import { ApiError } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
+import EmptyState from '../../components/EmptyState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeCuidador'>;
 
@@ -51,7 +52,9 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
         <HomeHeader
           title={`Olá, ${(user?.nome ?? 'Cuidador').split(' ')[0]}`}
-          subtitle={`${idosos.length} pessoas sob seus cuidados`}
+          subtitle={idosos.length === 1 ? '1 pessoa sob seus cuidados' : `${idosos.length} pessoas sob seus cuidados`}
+          photo={user?.foto}
+          accountType="cuidador"
           onProfile={() => navigation.navigate('Perfil')}
           onNotifications={() => navigation.navigate('Alertas')}
           notificationCount={alertCount}
@@ -61,7 +64,15 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
 
         <SectionHeader title="Pessoas acompanhadas" actionLabel="Ver alertas" onAction={() => navigation.navigate('Alertas')} />
 
-        {idosos.map((idoso) => (
+        {idosos.length === 0 ? (
+          <EmptyState
+            icon="account-heart-outline"
+            title="Sua rede começa aqui"
+            message="Vincule a conta de um idoso com o código temporário fornecido por ele."
+            actionLabel="Vincular primeiro idoso"
+            onAction={() => navigation.navigate('VincularIdoso')}
+          />
+        ) : idosos.map((idoso) => (
           <Pressable
             key={idoso.id}
             accessibilityRole="button"
@@ -70,7 +81,7 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('DetalheIdoso', { idosoId: idoso.id, nome: idoso.nome })}
           >
             <View style={styles.avatar}>
-              <Text style={styles.avatarLabel}>{idoso.nome.charAt(0)}</Text>
+              {idoso.foto ? <Image source={{ uri: idoso.foto }} style={styles.avatarImage} /> : <Text style={styles.avatarLabel}>{idoso.nome.charAt(0)}</Text>}
             </View>
             <View style={styles.idosoInfo}>
               <Text style={styles.idosoNome}>{idoso.nome}</Text>
@@ -95,6 +106,7 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 100 },
   idosoCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.cardBg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12, minHeight: 82 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 22 },
   avatarLabel: { fontFamily: fonts.bodyBold, color: colors.sand, fontSize: 16 },
   idosoInfo: { flex: 1 },
   idosoNome: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink },

@@ -8,7 +8,7 @@ import BackHeader from '../../components/BackHeader';
 import Card from '../../components/Card';
 import AppButton from '../../components/AppButton';
 import InlineNotice from '../../components/InlineNotice';
-import { formatPhone, phoneUri } from '../../utils/phone';
+import { formatPhone, phoneUri, whatsappUri } from '../../utils/phone';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ContatoRapido'>;
 
@@ -35,9 +35,9 @@ export default function ContatoRapidoScreen({ navigation, route }: Props) {
   }
 
   function message() {
-    const uri = phoneUri(telefone, 'sms');
+    const uri = whatsappUri(telefone, `Olá, ${nome}. Está tudo bem?`);
     if (!uri) { Alert.alert('Telefone indisponível', `${nome} ainda não possui um telefone válido.`); return; }
-    openUrl(`${uri}?body=${encodeURIComponent(`Olá, ${nome}. Está tudo bem?`)}`, 'Este aparelho não pode enviar mensagens.');
+    openUrl(uri, 'Não foi possível abrir o WhatsApp neste aparelho.');
   }
 
   return (
@@ -50,7 +50,7 @@ export default function ContatoRapidoScreen({ navigation, route }: Props) {
           <View style={styles.copy}><Text style={styles.cardTitle}>Falar agora</Text><Text style={styles.cardText}>Use uma ligação ou mensagem para verificar como {nome.split(' ')[0]} está.</Text></View>
         </Card>
         <AppButton label="Ligar" icon="phone-outline" onPress={call} />
-        <AppButton label="Enviar mensagem" icon="message-text-outline" variant="secondary" onPress={message} />
+        <AppButton label="Conversar no WhatsApp" icon="whatsapp" variant="secondary" onPress={message} />
         <InlineNotice tone="warning" message="Em uma emergência médica, ligue para o SAMU pelo número 192." />
       </ScrollView>
     </SafeAreaView>

@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Login: undefined;
   Cadastro: undefined;
   RecuperarSenha: undefined;
+  DocumentoLegal: { tipo: 'termos' | 'privacidade' };
   HomeIdoso: undefined;
   HomeCuidador: undefined;
   Perfil: undefined;

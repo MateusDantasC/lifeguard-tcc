@@ -67,7 +67,7 @@ export default function HomeIdosoScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
-        <HomeHeader title={`Olá, ${(user?.nome ?? 'Usuário').split(' ')[0]}`} subtitle="Seu cuidado está sendo acompanhado" onProfile={() => navigation.navigate('Perfil')} />
+        <HomeHeader title={`Olá, ${(user?.nome ?? 'Usuário').split(' ')[0]}`} subtitle="Seu cuidado está sendo acompanhado" photo={user?.foto} accountType="idoso" onProfile={() => navigation.navigate('Perfil')} />
 
         {erro ? <InlineNotice tone="warning" message={erro} /> : null}
 

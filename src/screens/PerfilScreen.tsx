@@ -17,6 +17,10 @@ import { apiRequest, ApiError } from '../services/api';
 import { useMonitoringStore } from '../store/monitoringStore';
 import { formatPhone } from '../utils/phone';
 import GenderSelector, { formatGender } from '../components/GenderSelector';
+import CountryPhoneInput from '../components/CountryPhoneInput';
+import { normalizePhone, phoneCountry, phoneNationalValue } from '../utils/phone';
+import type { CountryCode } from 'libphonenumber-js';
+import { isValidEmail } from '../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
@@ -33,6 +37,7 @@ function brToIso(value: string) {
   const [, day, month, year] = match;
   const date = new Date(`${year}-${month}-${day}T12:00:00.000Z`);
   if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() + 1 !== Number(month) || date.getUTCDate() !== Number(day)) return undefined;
+  if (Number(year) < 1900 || date.getTime() > Date.now()) return undefined;
   return `${year}-${month}-${day}`;
 }
 
@@ -44,7 +49,8 @@ export default function PerfilScreen({ navigation }: Props) {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  const [telefone, setTelefone] = useState(formatPhone(user?.telefone));
+  const [telefone, setTelefone] = useState(phoneNationalValue(user?.telefone));
+  const [paisTelefone, setPaisTelefone] = useState<CountryCode>(phoneCountry(user?.telefone));
   const [foto, setFoto] = useState<string | null>(user?.foto ?? null);
   const [genero, setGenero] = useState<Gender | null>(user?.genero ?? null);
   const [dataNascimento, setDataNascimento] = useState(isoToBr(user?.perfilIdoso?.dataNascimento));
@@ -54,14 +60,16 @@ export default function PerfilScreen({ navigation }: Props) {
   const [condicoesMedicas, setCondicoesMedicas] = useState(user?.perfilIdoso?.condicoesMedicas ?? '');
   const [observacoes, setObservacoes] = useState(user?.perfilIdoso?.observacoesImportantes ?? '');
   const [contatoNome, setContatoNome] = useState(user?.perfilIdoso?.contatoEmergenciaNome ?? '');
-  const [contatoTelefone, setContatoTelefone] = useState(formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone));
+  const [contatoTelefone, setContatoTelefone] = useState(phoneNationalValue(user?.perfilIdoso?.contatoEmergenciaTelefone));
+  const [paisContato, setPaisContato] = useState<CountryCode>(phoneCountry(user?.perfilIdoso?.contatoEmergenciaTelefone));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const hasUnsavedChanges = editing && (
     nome !== (user?.nome ?? '')
     || email !== (user?.email ?? '')
-    || telefone !== formatPhone(user?.telefone)
+    || telefone !== phoneNationalValue(user?.telefone)
+    || paisTelefone !== phoneCountry(user?.telefone)
     || foto !== (user?.foto ?? null)
     || genero !== (user?.genero ?? null)
     || dataNascimento !== isoToBr(user?.perfilIdoso?.dataNascimento)
@@ -71,7 +79,8 @@ export default function PerfilScreen({ navigation }: Props) {
     || condicoesMedicas !== (user?.perfilIdoso?.condicoesMedicas ?? '')
     || observacoes !== (user?.perfilIdoso?.observacoesImportantes ?? '')
     || contatoNome !== (user?.perfilIdoso?.contatoEmergenciaNome ?? '')
-    || contatoTelefone !== formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone)
+    || contatoTelefone !== phoneNationalValue(user?.perfilIdoso?.contatoEmergenciaTelefone)
+    || paisContato !== phoneCountry(user?.perfilIdoso?.contatoEmergenciaTelefone)
   );
 
   usePreventRemove(hasUnsavedChanges, ({ data }) => {
@@ -86,11 +95,11 @@ export default function PerfilScreen({ navigation }: Props) {
   });
 
   function resetForm() {
-    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(formatPhone(user?.telefone)); setFoto(user?.foto ?? null); setGenero(user?.genero ?? null);
+    setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(phoneNationalValue(user?.telefone)); setPaisTelefone(phoneCountry(user?.telefone)); setFoto(user?.foto ?? null); setGenero(user?.genero ?? null);
     setDataNascimento(isoToBr(user?.perfilIdoso?.dataNascimento)); setTipoSanguineo(user?.perfilIdoso?.tipoSanguineo ?? '');
     setAlergias(user?.perfilIdoso?.alergias ?? ''); setMedicamentos(user?.perfilIdoso?.medicamentos ?? '');
     setCondicoesMedicas(user?.perfilIdoso?.condicoesMedicas ?? ''); setObservacoes(user?.perfilIdoso?.observacoesImportantes ?? '');
-    setContatoNome(user?.perfilIdoso?.contatoEmergenciaNome ?? ''); setContatoTelefone(formatPhone(user?.perfilIdoso?.contatoEmergenciaTelefone));
+    setContatoNome(user?.perfilIdoso?.contatoEmergenciaNome ?? ''); setContatoTelefone(phoneNationalValue(user?.perfilIdoso?.contatoEmergenciaTelefone)); setPaisContato(phoneCountry(user?.perfilIdoso?.contatoEmergenciaTelefone));
   }
 
   async function choosePhoto() {
@@ -115,11 +124,25 @@ export default function PerfilScreen({ navigation }: Props) {
   }
 
   async function handleSave() {
-    if (!nome.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
+    if (!nome.trim() || !isValidEmail(email)) {
       setError('Confira seu nome e e-mail antes de salvar.'); return;
     }
     if (!genero) {
       setError('Selecione seu gênero antes de salvar.'); return;
+    }
+    const telefoneInternacional = telefone.trim() ? normalizePhone(telefone, paisTelefone) : null;
+    if (telefone.trim() && !telefoneInternacional) {
+      setError('Digite um telefone válido para o país selecionado.'); return;
+    }
+    if (!telefoneInternacional) {
+      setError('Informe um telefone válido para manter seus contatos de cuidado atualizados.'); return;
+    }
+    const contatoTelefoneInternacional = contatoTelefone.trim() ? normalizePhone(contatoTelefone, paisContato) : null;
+    if (contatoTelefone.trim() && !contatoTelefoneInternacional) {
+      setError('Digite um telefone válido para o contato de emergência.'); return;
+    }
+    if (Boolean(contatoNome.trim()) !== Boolean(contatoTelefoneInternacional)) {
+      setError('Informe o nome e o telefone do contato de emergência, ou deixe os dois em branco.'); return;
     }
     const birthDate = brToIso(dataNascimento);
     if (birthDate === undefined) {
@@ -133,13 +156,13 @@ export default function PerfilScreen({ navigation }: Props) {
       condicoesMedicas: condicoesMedicas.trim() || null,
       observacoesImportantes: observacoes.trim() || null,
       contatoEmergenciaNome: contatoNome.trim() || null,
-      contatoEmergenciaTelefone: contatoTelefone.trim() || null,
+      contatoEmergenciaTelefone: contatoTelefoneInternacional,
     } : undefined;
     setLoading(true);
     try {
       const response = await apiRequest<{ usuario: NonNullable<typeof user> }>('/auth/me', {
         method: 'PATCH',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefone.trim() || null, foto, genero, ...(perfilIdoso ? { perfilIdoso } : {}) }),
+        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefoneInternacional, foto, genero, ...(perfilIdoso ? { perfilIdoso } : {}) }),
       });
       updateUser(response.usuario);
       setError(''); setEditing(false);
@@ -194,9 +217,16 @@ export default function PerfilScreen({ navigation }: Props) {
           </View>
 
           <Card style={styles.card}>{editing ? <>
-            <AppTextInput label="Nome completo" value={nome} onChangeText={setNome} editable={!loading} required />
-            <AppTextInput label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!loading} required />
-            <AppTextInput label="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" editable={!loading} />
+            <AppTextInput label="Nome completo" value={nome} onChangeText={setNome} editable={!loading} maxLength={100} required />
+            <AppTextInput label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!loading} maxLength={254} required />
+            <CountryPhoneInput
+              country={paisTelefone}
+              onCountryChange={(country) => { setPaisTelefone(country); setError(''); }}
+              value={telefone}
+              onChangeText={(value) => { setTelefone(value); setError(''); }}
+              disabled={loading}
+              helperText="Use um número completo com DDD para ligações e mensagens."
+            />
             <GenderSelector value={genero} onChange={setGenero} disabled={loading} required />
           </> : <>
             <ProfileRow icon="email-outline" label="E-mail" value={user?.email ?? 'Não informado'} />
@@ -209,16 +239,24 @@ export default function PerfilScreen({ navigation }: Props) {
             <Text style={styles.sectionHelper}>Esses dados ficam disponíveis somente para você e seus cuidadores vinculados.</Text>
             <Card style={styles.card}>{editing ? <>
               <View style={styles.inlineFields}>
-                <AppTextInput label="Data de nascimento" value={dataNascimento} onChangeText={setDataNascimento} placeholder="DD/MM/AAAA" keyboardType="number-pad" editable={!loading} containerStyle={styles.flexField} />
-                <AppTextInput label="Tipo sanguíneo" value={tipoSanguineo} onChangeText={setTipoSanguineo} placeholder="Ex.: O+" autoCapitalize="characters" editable={!loading} containerStyle={styles.bloodField} />
+              <AppTextInput label="Data de nascimento" value={dataNascimento} onChangeText={setDataNascimento} placeholder="DD/MM/AAAA" keyboardType="number-pad" editable={!loading} maxLength={10} containerStyle={styles.flexField} />
+              <AppTextInput label="Tipo sanguíneo" value={tipoSanguineo} onChangeText={setTipoSanguineo} placeholder="Ex.: O+" autoCapitalize="characters" editable={!loading} maxLength={5} containerStyle={styles.bloodField} />
               </View>
-              <AppTextInput label="Condições médicas" value={condicoesMedicas} onChangeText={setCondicoesMedicas} placeholder="Ex.: hipertensão, diabetes" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} />
-              <AppTextInput label="Alergias" value={alergias} onChangeText={setAlergias} placeholder="Medicamentos, alimentos ou outras" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} />
-              <AppTextInput label="Medicamentos em uso" value={medicamentos} onChangeText={setMedicamentos} placeholder="Nome e dosagem, se souber" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} />
-              <AppTextInput label="Observações importantes" value={observacoes} onChangeText={setObservacoes} placeholder="Informações úteis em uma emergência" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} />
+              <AppTextInput label="Condições médicas" value={condicoesMedicas} onChangeText={setCondicoesMedicas} placeholder="Ex.: hipertensão, diabetes" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
+              <AppTextInput label="Alergias" value={alergias} onChangeText={setAlergias} placeholder="Medicamentos, alimentos ou outras" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
+              <AppTextInput label="Medicamentos em uso" value={medicamentos} onChangeText={setMedicamentos} placeholder="Nome e dosagem, se souber" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
+              <AppTextInput label="Observações importantes" value={observacoes} onChangeText={setObservacoes} placeholder="Informações úteis em uma emergência" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
               <Text style={styles.subsectionTitle}>Contato de emergência</Text>
-              <AppTextInput label="Nome" value={contatoNome} onChangeText={setContatoNome} editable={!loading} />
-              <AppTextInput label="Telefone" value={contatoTelefone} onChangeText={setContatoTelefone} keyboardType="phone-pad" editable={!loading} />
+              <AppTextInput label="Nome" value={contatoNome} onChangeText={setContatoNome} editable={!loading} maxLength={100} />
+              <CountryPhoneInput
+                country={paisContato}
+                onCountryChange={(country) => { setPaisContato(country); setError(''); }}
+                value={contatoTelefone}
+                onChangeText={(value) => { setContatoTelefone(value); setError(''); }}
+                disabled={loading}
+                required={false}
+                helperText="Opcional; preencha junto com o nome do contato."
+              />
             </> : <>
               <ProfileRow icon="calendar-outline" label="Data de nascimento" value={isoToBr(profile?.dataNascimento) || 'Não informado'} />
               <ProfileRow icon="water-outline" label="Tipo sanguíneo" value={profile?.tipoSanguineo || 'Não informado'} />

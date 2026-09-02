@@ -4,6 +4,7 @@ import type { RootStackParamList } from './types';
 import LoginScreen from '../screens/LoginScreen';
 import CadastroScreen from '../screens/CadastroScreen';
 import RecuperarSenhaScreen from '../screens/RecuperarSenhaScreen';
+import DocumentoLegalScreen from '../screens/DocumentoLegalScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import SemConexaoScreen from '../screens/SemConexaoScreen';
 import HomeIdosoScreen from '../screens/idoso/HomeIdosoScreen';
@@ -38,6 +39,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Cadastro" component={CadastroScreen} />
         <Stack.Screen name="RecuperarSenha" component={RecuperarSenhaScreen} />
+        <Stack.Screen name="DocumentoLegal" component={DocumentoLegalScreen} />
         <Stack.Screen name="HomeIdoso" component={HomeIdosoScreen} />
         <Stack.Screen name="HomeCuidador" component={HomeCuidadorScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />

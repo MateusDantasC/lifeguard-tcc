@@ -12,6 +12,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { apiRequest, ApiError } from './src/services/api';
 import type { AuthUser } from './src/store/authStore';
+import AppErrorBoundary from './src/components/AppErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 450, fade: true });
@@ -87,7 +88,9 @@ export default function App() {
     <SafeAreaProvider>
       <View style={{ flex: 1 }}>
         <StatusBar style="dark" />
-        <AppNavigator />
+        <AppErrorBoundary>
+          <AppNavigator />
+        </AppErrorBoundary>
       </View>
     </SafeAreaProvider>
   );

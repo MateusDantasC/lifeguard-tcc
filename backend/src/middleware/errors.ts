@@ -8,8 +8,9 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof ZodError) {
+    const firstMessage = error.issues[0]?.message;
     res.status(400).json({
-      erro: 'Dados inválidos.',
+      erro: firstMessage && firstMessage !== 'Invalid input' ? firstMessage : 'Confira os dados informados.',
       codigo: 'VALIDATION_ERROR',
       campos: error.flatten().fieldErrors,
     });

@@ -18,9 +18,24 @@ export function formatPhone(value?: string | null) {
   return parseStoredPhone(value)?.formatInternational() ?? value ?? '';
 }
 
+export function phoneCountry(value?: string | null, fallback: CountryCode = 'BR') {
+  return parseStoredPhone(value)?.country ?? fallback;
+}
+
+export function phoneNationalValue(value?: string | null) {
+  return parseStoredPhone(value)?.formatNational() ?? value ?? '';
+}
+
 export function phoneUri(value?: string | null, scheme: 'tel' | 'sms' = 'tel') {
   const parsed = parseStoredPhone(value);
   return parsed ? `${scheme}:${parsed.number}` : null;
+}
+
+export function whatsappUri(value?: string | null, message?: string) {
+  const parsed = parseStoredPhone(value);
+  if (!parsed) return null;
+  const number = parsed.number.replace(/\D/g, '');
+  return `https://wa.me/${number}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
 }
 
 export function flagForCountry(country: CountryCode) {

@@ -13,8 +13,16 @@ const registerSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
   telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.'),
   genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']),
-  senha: z.string().min(8).max(72),
+  senha: z.string()
+    .min(8, 'A senha deve ter pelo menos 8 caracteres.')
+    .max(72, 'A senha deve ter no máximo 72 caracteres.')
+    .regex(/[a-zà-öø-ÿ]/, 'A senha deve ter uma letra minúscula.')
+    .regex(/[A-ZÀ-ÖØ-Þ]/, 'A senha deve ter uma letra maiúscula.')
+    .regex(/\d/, 'A senha deve ter um número.')
+    .regex(/[^\p{L}\p{N}\s]/u, 'A senha deve ter um caractere especial.'),
   tipo: z.enum(['idoso', 'cuidador']),
+  aceitouTermos: z.literal(true, { error: 'É necessário aceitar os Termos de Uso.' }),
+  aceitouPrivacidade: z.literal(true, { error: 'É necessário aceitar a Política de Privacidade.' }),
 });
 
 const loginSchema = z.object({
@@ -25,7 +33,7 @@ const loginSchema = z.object({
 const updateProfileSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
-  telefone: z.string().trim().min(8).max(20).nullable().optional(),
+  telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.').nullable().optional(),
   foto: z.string().max(750_000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/).nullable().optional(),
   genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']).nullable().optional(),
   perfilIdoso: z.object({
@@ -36,8 +44,11 @@ const updateProfileSchema = z.object({
     condicoesMedicas: z.string().trim().max(1000).nullable().optional(),
     observacoesImportantes: z.string().trim().max(1000).nullable().optional(),
     contatoEmergenciaNome: z.string().trim().max(100).nullable().optional(),
-    contatoEmergenciaTelefone: z.string().trim().max(20).nullable().optional(),
-  }).optional(),
+    contatoEmergenciaTelefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone de emergência inválido.').nullable().optional(),
+  }).refine(
+    (profile) => Boolean(profile.contatoEmergenciaNome) === Boolean(profile.contatoEmergenciaTelefone),
+    { message: 'Informe o nome e o telefone do contato de emergência.', path: ['contatoEmergenciaTelefone'] },
+  ).optional(),
 });
 
 export const authRouter = Router();
@@ -57,6 +68,7 @@ authRouter.post('/cadastro', async (req, res) => {
   if (existing) throw new HttpError(409, 'Este e-mail já está cadastrado.', 'EMAIL_IN_USE');
 
   const type = input.tipo === 'idoso' ? UserType.ELDER : UserType.CAREGIVER;
+  const acceptedAt = new Date();
   const user = await prisma.user.create({
     data: {
       name: input.nome,
@@ -65,6 +77,9 @@ authRouter.post('/cadastro', async (req, res) => {
       gender: genderMap[input.genero],
       passwordHash: await hash(input.senha, 12),
       type,
+      termsAcceptedAt: acceptedAt,
+      privacyAcceptedAt: acceptedAt,
+      legalDocumentVersion: '2026-09-01',
       ...(type === UserType.ELDER
         ? {
             elderProfile: { create: {} },

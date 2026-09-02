@@ -7,6 +7,8 @@ $outputApk = Join-Path $outputDirectory "lifeguard.apk"
 $packageJsonPath = Join-Path $projectRoot "package.json"
 $androidStudioJdk = "C:\Program Files\Android\Android Studio\jbr"
 $projectAndroidSdk = Join-Path $projectRoot ".tools\android-sdk"
+$userGradleHome = Join-Path $env:USERPROFILE ".gradle"
+$userAndroidHome = Join-Path $env:USERPROFILE ".android"
 $defaultAndroidSdk = Join-Path $env:LOCALAPPDATA "Android\Sdk"
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
 
@@ -44,7 +46,12 @@ elseif (-not $env:ANDROID_HOME) {
     $env:ANDROID_HOME = $defaultAndroidSdk
 }
 $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
+$env:GRADLE_USER_HOME = $userGradleHome
+$env:ANDROID_USER_HOME = $userAndroidHome
 $env:NODE_ENV = "production"
+
+New-Item -ItemType Directory -Force -Path $userGradleHome | Out-Null
+New-Item -ItemType Directory -Force -Path $userAndroidHome | Out-Null
 
 if (-not (Test-Path $env:ANDROID_HOME)) {
     throw "Android SDK nao encontrado. Abra o Android Studio uma vez e conclua o Setup Wizard."
