@@ -31,7 +31,7 @@ export default function HomeHeader({ title, subtitle, onProfile, onNotifications
               {notificationCount > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{notificationCount}</Text></View> : null}
             </Pressable>
           ) : null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Abrir perfil" onPress={onProfile} style={({ pressed }) => [styles.profileRing, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Abrir perfil" onPress={onProfile} style={({ pressed }) => [styles.profileButton, pressed && styles.pressed]}>
             <View style={styles.profile}>
               {photo ? <Image source={{ uri: photo }} style={styles.profileImage} /> : <MaterialCommunityIcons name="account-outline" size={24} color={colors.sand} />}
             </View>
@@ -55,8 +55,8 @@ const styles = StyleSheet.create({
   subtitle: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.textSecondary, marginTop: 3 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   action: { width: 44, height: 44, borderRadius: 15, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center' },
-  profileRing: { width: 52, height: 52, borderRadius: 18, padding: 3, borderWidth: 1.5, borderColor: colors.coral },
-  profile: { flex: 1, borderRadius: 14, overflow: 'hidden', backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  profileButton: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden' },
+  profile: { flex: 1, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
   profileImage: { width: '100%', height: '100%' },
   badge: { position: 'absolute', right: 3, top: 3, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.ember, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: colors.sand },
   badgeText: { color: colors.white, fontFamily: fonts.bodyBold, fontSize: 10 },
