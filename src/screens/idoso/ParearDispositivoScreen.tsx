@@ -31,8 +31,8 @@ export default function ParearDispositivoScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Parear dispositivo" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.hero}><MaterialCommunityIcons name="devices" size={42} color={colors.coral} /><Text style={styles.title}>Conecte seu LifeGuard</Text><Text style={styles.description}>Digite o código impresso no dispositivo ou fornecido durante a configuração.</Text></View>
           <AppTextInput label="Código do dispositivo" value={code} onChangeText={(value) => { setCode(value.toUpperCase()); setError(''); }} error={error} placeholder="Ex.: A1B2C3D4" autoCapitalize="characters" maxLength={16} required />
           <AppButton label="Parear agora" icon="link-variant" onPress={handlePair} />

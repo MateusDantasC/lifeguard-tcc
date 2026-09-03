@@ -3,6 +3,7 @@ import { AlertType, ReadingSource } from '../generated/prisma/enums.js';
 import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 import { getSimulatedReading } from './scenarios.js';
+import { sendPushToUsers } from '../services/push.js';
 
 const ALERT_COOLDOWN_MS = 10 * 60 * 1000;
 let sequenceIndex = 0;
@@ -17,7 +18,8 @@ async function simulate() {
   }
 
   const sample = getSimulatedReading(sequenceIndex++);
-  await prisma.$transaction(async (tx) => {
+  const createdAlerts = await prisma.$transaction(async (tx) => {
+    const alerts: Array<{ id: string; message: string }> = [];
     await tx.reading.create({
       data: {
         deviceId: device.id,
@@ -32,7 +34,7 @@ async function simulate() {
     });
     await tx.device.update({ where: { id: device.id }, data: { lastSeenAt: new Date() } });
 
-    if (!device.elder.alertLimits) return;
+    if (!device.elder.alertLimits) return alerts;
     const violations = findLimitViolations(sample, device.elder.alertLimits);
     for (const violation of violations) {
       const type = violation.type === 'HEART_RATE' ? AlertType.HEART_RATE : AlertType.TEMPERATURE;
@@ -44,7 +46,7 @@ async function simulate() {
         },
       });
       if (!recent) {
-        await tx.alert.create({
+        const alert = await tx.alert.create({
           data: {
             elderId: device.elderId,
             type,
@@ -52,9 +54,26 @@ async function simulate() {
             message: violation.message,
           },
         });
+        alerts.push({ id: alert.id, message: alert.message });
       }
     }
+    return alerts;
   });
+
+  if (createdAlerts.length > 0) {
+    const caregivers = await prisma.caregiverElderLink.findMany({
+      where: { elderId: device.elderId, status: 'ACTIVE' },
+      select: { caregiverId: true },
+    });
+    const recipients = [device.elderId, ...caregivers.map(({ caregiverId }) => caregiverId)];
+    for (const alert of createdAlerts) {
+      await sendPushToUsers(recipients, {
+        title: 'Alerta de saúde',
+        body: alert.message,
+        data: { tipo: 'alerta', alertaId: alert.id, pacienteId: device.elderId },
+      }, alert.id);
+    }
+  }
 
   console.log(`[${new Date().toISOString()}] ${sample.label}: bpm=${sample.heartRate ?? '-'} temp=${sample.temperature ?? '-'} válida=${sample.valid}`);
 }

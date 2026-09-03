@@ -6,6 +6,7 @@ import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../serializers.js';
+import { sendPushToUsers } from '../services/push.js';
 
 export const linksRouter = Router();
 linksRouter.use(requireAuth);
@@ -43,7 +44,7 @@ linksRouter.get('/', async (req, res) => {
 
 linksRouter.post('/codigo', async (req, res) => {
   if (req.auth!.type !== UserType.ELDER) {
-    throw new HttpError(403, 'Somente o idoso pode gerar um código de vínculo.', 'ELDER_ONLY');
+    throw new HttpError(403, 'Somente o paciente pode gerar um código de vínculo.', 'ELDER_ONLY');
   }
 
   await prisma.elderLinkCode.deleteMany({
@@ -100,6 +101,11 @@ linksRouter.post('/', async (req, res) => {
   res.status(201).json({
     vinculo: { id: link.id, usuario: serializeUser(link.elder), vinculadoEm: link.createdAt },
   });
+  void sendPushToUsers([link.elderId], {
+    title: 'Novo cuidador vinculado',
+    body: 'Um cuidador usou seu código e agora faz parte da sua rede de cuidado.',
+    data: { tipo: 'novo_vinculo' },
+  }).catch((error) => console.error('Falha ao enviar notificação de vínculo:', error));
 });
 
 linksRouter.delete('/:vinculoId', async (req, res) => {

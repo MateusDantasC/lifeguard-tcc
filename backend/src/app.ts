@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { authRouter } from './routes/auth.js';
 import { linksRouter } from './routes/links.js';
 import { monitoringRouter } from './routes/monitoring.js';
+import { notificationsRouter } from './routes/notifications.js';
 
 export const app = express();
 
@@ -20,6 +21,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/vinculos', linksRouter);
+app.use('/api/notificacoes', notificationsRouter);
 app.use('/api', monitoringRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);

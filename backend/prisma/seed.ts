@@ -93,7 +93,7 @@ async function main() {
 
   console.log('Dados de demonstração criados.');
   console.log('Cuidador: ana@lifeguard.test / Teste123!');
-  console.log('Idoso: maria@lifeguard.test / Teste123!');
+  console.log('Paciente: maria@lifeguard.test / Teste123!');
 }
 
 main()

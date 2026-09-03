@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -67,7 +67,8 @@ export default function ConfigurarLimitesScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Limites de alerta" onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Text style={styles.subtitulo}>Definindo os alertas de {nome}</Text>
 
         <Card style={styles.card}>
@@ -89,12 +90,14 @@ export default function ConfigurarLimitesScreen({ navigation, route }: Props) {
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
         <AppButton label="Salvar limites" icon="content-save-outline" onPress={handleSalvar} loading={loading} style={styles.save} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
+  flex: { flex: 1 },
   container: { paddingHorizontal: 20, paddingBottom: 40 },
   subtitulo: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary, marginBottom: 16 },
   card: { marginBottom: 16 },

@@ -33,7 +33,7 @@ async function assertElderAccess(userId: string, userType: UserType, elderId: st
     });
     if (link) return;
   }
-  throw new HttpError(403, 'Você não possui acesso a este idoso.', 'ELDER_ACCESS_DENIED');
+  throw new HttpError(403, 'Você não possui acesso a este paciente.', 'ELDER_ACCESS_DENIED');
 }
 
 function serializeLimits(limits: {
@@ -79,7 +79,7 @@ function serializeReading(reading: {
 
 monitoringRouter.get('/idosos', async (req, res) => {
   if (req.auth!.type !== UserType.CAREGIVER) {
-    throw new HttpError(403, 'Apenas cuidadores possuem uma lista de idosos.', 'CAREGIVER_ONLY');
+    throw new HttpError(403, 'Apenas cuidadores possuem uma lista de pacientes.', 'CAREGIVER_ONLY');
   }
 
   const links = await prisma.caregiverElderLink.findMany({
@@ -136,7 +136,7 @@ monitoringRouter.get('/idosos/:idosoId', async (req, res) => {
       },
     },
   });
-  if (!elder) throw new HttpError(404, 'Idoso não encontrado.', 'ELDER_NOT_FOUND');
+  if (!elder) throw new HttpError(404, 'Paciente não encontrado.', 'ELDER_NOT_FOUND');
 
   const latest = elder.devices[0]?.readings[0] ?? null;
   const limits = elder.alertLimits;

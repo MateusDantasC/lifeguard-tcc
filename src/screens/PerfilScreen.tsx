@@ -21,6 +21,8 @@ import CountryPhoneInput from '../components/CountryPhoneInput';
 import { normalizePhone, phoneCountry, phoneNationalValue } from '../utils/phone';
 import type { CountryCode } from 'libphonenumber-js';
 import { isValidEmail } from '../utils/validation';
+import PushNotificationsCard from '../components/PushNotificationsCard';
+import { unregisterPushNotifications } from '../services/notifications';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
@@ -196,7 +198,11 @@ export default function PerfilScreen({ navigation }: Props) {
   function handleLogout() {
     Alert.alert('Sair da conta', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => { logout(); resetMonitoring(); navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); } },
+      { text: 'Sair', style: 'destructive', onPress: () => {
+        void unregisterPushNotifications().catch(() => undefined).finally(() => {
+          logout(); resetMonitoring(); navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        });
+      } },
     ]);
   }
 
@@ -204,8 +210,8 @@ export default function PerfilScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Meu perfil" onBack={() => navigation.goBack()} rightIcon={editing ? undefined : 'pencil-outline'} onRightPress={editing ? undefined : () => setEditing(true)} rightLabel="Editar perfil" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.identity}>
             <View style={styles.avatar}>{foto ? <Image source={{ uri: foto }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(user?.nome ?? 'U').charAt(0).toUpperCase()}</Text>}</View>
             {editing ? <View style={styles.photoActions}>
@@ -213,7 +219,7 @@ export default function PerfilScreen({ navigation }: Props) {
               {foto ? <AppButton label="Remover" icon="delete-outline" variant="text" onPress={() => setFoto(null)} disabled={loading} /> : null}
             </View> : null}
             <Text style={styles.name}>{user?.nome ?? 'Usuário'}</Text>
-            <View style={styles.accountType}><MaterialCommunityIcons name={user?.tipo === 'cuidador' ? 'hand-heart-outline' : 'account-heart-outline'} size={17} color={colors.mossText} /><Text style={styles.accountTypeText}>Conta de {user?.tipo ?? 'usuário'}</Text></View>
+            <View style={styles.accountType}><MaterialCommunityIcons name={user?.tipo === 'cuidador' ? 'hand-heart-outline' : 'account-heart-outline'} size={17} color={colors.mossText} /><Text style={styles.accountTypeText}>Conta de {user?.tipo === 'idoso' ? 'paciente' : user?.tipo ?? 'usuário'}</Text></View>
           </View>
 
           <Card style={styles.card}>{editing ? <>
@@ -267,6 +273,8 @@ export default function PerfilScreen({ navigation }: Props) {
               <ProfileRow icon="account-alert-outline" label="Contato de emergência" value={profile?.contatoEmergenciaNome && profile?.contatoEmergenciaTelefone ? `${profile.contatoEmergenciaNome} · ${formatPhone(profile.contatoEmergenciaTelefone)}` : 'Não informado'} last />
             </>}</Card>
           </> : null}
+
+          {!editing ? <PushNotificationsCard /> : null}
 
           {editing ? <>
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}

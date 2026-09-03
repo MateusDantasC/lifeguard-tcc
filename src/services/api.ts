@@ -1,6 +1,16 @@
+import { useConnectionStore } from '../store/connectionStore';
+
 let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://152-67-44-170.sslip.io/api';
 
 let accessToken: string | null = null;
+
+function markServerOnline() {
+  useConnectionStore.getState().setOnline();
+}
+
+function markServerOffline(message: string) {
+  useConnectionStore.getState().setOffline(message);
+}
 
 export class ApiError extends Error {
   constructor(
@@ -41,6 +51,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
       },
     });
     const body = response.status === 204 ? null : await response.json().catch(() => null);
+    markServerOnline();
     if (!response.ok) {
       throw new ApiError(body?.erro ?? 'Não foi possível concluir a solicitação.', response.status, body?.codigo);
     }
@@ -48,9 +59,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('A conexão demorou demais. Confira sua internet e tente novamente.');
+      const message = 'A conexão demorou demais. Confira sua internet e tente novamente.';
+      markServerOffline(message);
+      throw new ApiError(message, undefined, 'CONNECTION_TIMEOUT');
     }
-    throw new ApiError('Não foi possível conectar ao LifeGuard. Confira sua internet e tente novamente.');
+    const message = 'Não foi possível conectar ao LifeGuard. Confira sua internet e tente novamente.';
+    markServerOffline(message);
+    throw new ApiError(message, undefined, 'CONNECTION_ERROR');
   } finally {
     clearTimeout(timeout);
   }

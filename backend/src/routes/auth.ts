@@ -125,7 +125,7 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   const currentUser = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { type: true } });
   if (!currentUser) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
   if (input.perfilIdoso && currentUser.type !== UserType.ELDER) {
-    throw new HttpError(403, 'Somente o idoso pode preencher informações do paciente.', 'ELDER_ONLY');
+    throw new HttpError(403, 'Somente o paciente pode preencher suas informações de saúde.', 'ELDER_ONLY');
   }
 
   const profile = input.perfilIdoso;

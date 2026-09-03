@@ -56,10 +56,10 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
 
   function handleRemove() {
     if (!leitura.vinculoId) {
-      Alert.alert('Vínculo indisponível', 'Atualize a lista de idosos e tente novamente.');
+      Alert.alert('Vínculo indisponível', 'Atualize a lista de pacientes e tente novamente.');
       return;
     }
-    Alert.alert('Remover idoso', `Você deixará de acompanhar ${leitura.nome} e não verá mais seus dados. Deseja continuar?`, [
+    Alert.alert('Remover paciente', `Você deixará de acompanhar ${leitura.nome} e não verá mais seus dados. Deseja continuar?`, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Remover', style: 'destructive', onPress: async () => {
         try {
@@ -99,7 +99,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
             <PatientInfo icon="alert-circle-outline" label="Observações" value={profile?.observacoesImportantes || 'Não informado'} />
             <PatientInfo icon="account-alert-outline" label="Contato de emergência" value={emergencyContact} last />
           </View>
-          {!profile ? <Text style={styles.emptyProfile}>O próprio idoso preenche estes dados em Meu perfil → Editar perfil.</Text> : null}
+          {!profile ? <Text style={styles.emptyProfile}>O próprio paciente preenche estes dados em Meu perfil → Editar perfil.</Text> : null}
         </Card>
         <Card style={styles.header}>
           <View style={styles.statusCopy}><Text style={styles.statusTitle}>Monitoramento ativo</Text><Text style={styles.subSaudacao}>Atualizado {leitura.ultimaAtualizacao}</Text></View>

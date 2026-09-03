@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "44066949202",
+    "project_id": "lifeguard-b88f9",
+    "storage_bucket": "lifeguard-b88f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44066949202:android:4698e3b9a7a53239d8778b",
+        "android_client_info": {
+          "package_name": "com.mdantasc.lifeguard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO1I07KrmfxzRqWVjeQ-ajg-2jiAlTyY0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

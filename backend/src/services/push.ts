@@ -1,0 +1,58 @@
+import { prisma } from '../lib/prisma.js';
+
+type PushPayload = {
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+};
+
+type ExpoTicket = { status: 'ok'; id: string } | { status: 'error'; message: string; details?: { error?: string } };
+
+export async function sendPushToUsers(userIds: string[], payload: PushPayload, alertId?: string) {
+  const uniqueUserIds = [...new Set(userIds)];
+  if (uniqueUserIds.length === 0) return 0;
+
+  const tokens = await prisma.pushToken.findMany({
+    where: { userId: { in: uniqueUserIds }, active: true },
+    select: { id: true, userId: true, token: true },
+  });
+  if (tokens.length === 0) return 0;
+
+  let sent = 0;
+  for (let offset = 0; offset < tokens.length; offset += 100) {
+    const chunk = tokens.slice(offset, offset + 100);
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip, deflate', 'Content-Type': 'application/json' },
+      body: JSON.stringify(chunk.map(({ token }) => ({
+        to: token,
+        title: payload.title,
+        body: payload.body,
+        data: payload.data,
+        sound: 'default',
+        channelId: 'alertas',
+        priority: 'high',
+      }))),
+    });
+    if (!response.ok) throw new Error(`Expo Push respondeu com status ${response.status}.`);
+
+    const result = await response.json() as { data?: ExpoTicket[] };
+    const tickets = result.data ?? [];
+    for (let index = 0; index < chunk.length; index += 1) {
+      const token = chunk[index];
+      const ticket = tickets[index];
+      if (!token || !ticket) continue;
+      if (ticket.status === 'ok') {
+        sent += 1;
+        if (alertId) {
+          await prisma.notificationSent.create({
+            data: { alertId, recipientId: token.userId, providerId: ticket.id },
+          });
+        }
+      } else if (ticket.details?.error === 'DeviceNotRegistered') {
+        await prisma.pushToken.update({ where: { id: token.id }, data: { active: false } });
+      }
+    }
+  }
+  return sent;
+}

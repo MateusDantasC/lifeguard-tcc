@@ -94,8 +94,8 @@ export default function CadastroScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
       <BackHeader title="Criar conta" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.intro}>
           <View style={styles.introLine} />
           <View style={styles.introCopy}>
@@ -110,12 +110,12 @@ export default function CadastroScreen({ navigation }: Props) {
           onChange={setTipoConta}
           disabled={loading}
           options={[
-            { value: 'idoso', label: 'Idoso' },
+            { value: 'idoso', label: 'Paciente' },
             { value: 'cuidador', label: 'Cuidador' },
           ]}
         />
 
-        <InlineNotice message={tipoConta === 'idoso' ? 'Você poderá acompanhar seus sinais e compartilhar o cuidado com pessoas de confiança.' : 'Você poderá acompanhar idosos vinculados e configurar os limites de alerta.'} />
+        <InlineNotice message={tipoConta === 'idoso' ? 'Você poderá acompanhar seus sinais e compartilhar o cuidado com pessoas de confiança.' : 'Você poderá acompanhar pacientes vinculados e configurar os limites de alerta.'} />
 
         <View style={styles.fields}>
           <AppTextInput label="Nome completo" value={nome} onChangeText={(value) => { setNome(value); setErro(''); }} editable={!loading} placeholder="Seu nome completo" autoComplete="name" maxLength={100} required />

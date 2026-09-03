@@ -68,8 +68,8 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
           <EmptyState
             icon="account-heart-outline"
             title="Sua rede começa aqui"
-            message="Vincule a conta de um idoso com o código temporário fornecido por ele."
-            actionLabel="Vincular primeiro idoso"
+            message="Vincule a conta de um paciente com o código temporário fornecido por ele."
+            actionLabel="Vincular primeiro paciente"
             onAction={() => navigation.navigate('VincularIdoso')}
           />
         ) : idosos.map((idoso) => (
@@ -93,9 +93,9 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
         ))}
       </ScrollView>
 
-      <Pressable accessibilityRole="button" accessibilityLabel="Vincular idoso" style={({ pressed }) => [styles.fab, pressed && styles.pressed]} onPress={() => navigation.navigate('VincularIdoso')}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Vincular paciente" style={({ pressed }) => [styles.fab, pressed && styles.pressed]} onPress={() => navigation.navigate('VincularIdoso')}>
         <MaterialCommunityIcons name="plus" size={20} color={colors.sand} />
-        <Text style={styles.fabLabel}>Vincular idoso</Text>
+        <Text style={styles.fabLabel}>Vincular paciente</Text>
       </Pressable>
     </SafeAreaView>
   );

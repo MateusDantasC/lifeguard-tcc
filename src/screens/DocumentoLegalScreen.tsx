@@ -13,7 +13,7 @@ const documents = {
     title: 'Termos de Uso',
     intro: 'Regras para utilizar o LifeGuard durante a fase de desenvolvimento acadêmico.',
     sections: [
-      ['Finalidade', 'O LifeGuard auxilia idosos e cuidadores a acompanhar informações de saúde, contatos e alertas. Nesta versão, o aplicativo é um protótipo acadêmico em desenvolvimento.'],
+      ['Finalidade', 'O LifeGuard auxilia pacientes e cuidadores no acompanhamento de informações de saúde, contatos e alertas. Nesta versão, o aplicativo é um protótipo acadêmico em desenvolvimento.'],
       ['Uso responsável', 'As informações e alertas não substituem avaliação, diagnóstico ou atendimento médico. Em uma emergência, procure o serviço de saúde adequado ou ligue para o SAMU pelo número 192.'],
       ['Conta e acesso', 'Você é responsável por informar dados corretos, proteger sua senha e utilizar apenas contas e vínculos autorizados. Não compartilhe códigos de acesso com pessoas desconhecidas.'],
       ['Sensores e disponibilidade', 'Leituras podem atrasar, ficar indisponíveis ou apresentar imprecisões por conexão, bateria, posicionamento ou limitações do sensor. O aplicativo não garante monitoramento ininterrupto.'],
@@ -25,8 +25,8 @@ const documents = {
     intro: 'Resumo de como os dados são usados no protótipo LifeGuard.',
     sections: [
       ['Dados tratados', 'O aplicativo pode armazenar nome, e-mail, telefone, foto, gênero, informações importantes do paciente, vínculos de cuidado, limites, leituras e alertas.'],
-      ['Como os dados são usados', 'Os dados permitem autenticar a conta, exibir o perfil, conectar idosos e cuidadores e apresentar o histórico de monitoramento.'],
-      ['Compartilhamento no cuidado', 'Informações do idoso ficam disponíveis para os cuidadores que ele autorizar por meio do código de vínculo. O vínculo pode ser removido pelo idoso ou pelo cuidador.'],
+      ['Como os dados são usados', 'Os dados permitem autenticar a conta, exibir o perfil, conectar pacientes e cuidadores e apresentar o histórico de monitoramento.'],
+      ['Compartilhamento no cuidado', 'As informações do paciente ficam disponíveis para os cuidadores autorizados por meio do código de vínculo. O vínculo pode ser removido pelo paciente ou pelo cuidador.'],
       ['Armazenamento e segurança', 'A comunicação com a API usa HTTPS e a sessão é protegida no aparelho. Como o projeto ainda está em desenvolvimento, não devem ser inseridos dados médicos reais ou sensíveis sem autorização.'],
       ['Controle dos dados', 'O usuário pode editar informações do perfil e remover vínculos. Recursos completos de exclusão da conta, exportação e retenção de dados serão implementados antes de uma publicação definitiva.'],
     ],

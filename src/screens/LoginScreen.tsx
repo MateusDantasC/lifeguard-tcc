@@ -11,6 +11,7 @@ import PulseLine from '../components/PulseLine';
 import SegmentedToggle from '../components/SegmentedToggle';
 import InlineNotice from '../components/InlineNotice';
 import { apiRequest, ApiError, getApiUrl, setApiUrl } from '../services/api';
+import OptionCheckbox from '../components/OptionCheckbox';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -23,6 +24,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [servidor, setServidor] = useState(getApiUrl());
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
+  const [manterConectado, setManterConectado] = useState(true);
   const setSession = useAuthStore((state) => state.setSession);
 
   async function handleLogin() {
@@ -44,10 +46,11 @@ export default function LoginScreen({ navigation }: Props) {
         body: JSON.stringify({ email: normalizedEmail, senha }),
       });
       if (response.usuario.tipo !== tipoConta) {
-        setErro(`Esta conta é de ${response.usuario.tipo}. Selecione a opção correta acima.`);
+        const tipoCorreto = response.usuario.tipo === 'idoso' ? 'paciente' : 'cuidador';
+        setErro(`Esta conta é de ${tipoCorreto}. Selecione a opção correta acima.`);
         return;
       }
-      setSession(response.token, response.usuario);
+      setSession(response.token, response.usuario, manterConectado);
       setErro('');
       navigation.reset({ index: 0, routes: [{ name: response.usuario.tipo === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
     } catch (error) {
@@ -59,8 +62,8 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.brand}>
             <Text style={styles.titulo}>LifeGuard</Text>
             <Text style={styles.tagline}>Cuidado presente, mesmo à distância</Text>
@@ -72,7 +75,7 @@ export default function LoginScreen({ navigation }: Props) {
             value={tipoConta}
             onChange={setTipoConta}
             options={[
-              { value: 'idoso', label: 'Sou idoso' },
+              { value: 'idoso', label: 'Sou paciente' },
               { value: 'cuidador', label: 'Sou cuidador' },
             ]}
             disabled={loading}
@@ -95,6 +98,8 @@ export default function LoginScreen({ navigation }: Props) {
             required
           />
 
+          <OptionCheckbox checked={manterConectado} label="Manter conectado neste aparelho" onChange={setManterConectado} disabled={loading} />
+
           {mostrarServidor ? (
             <AppTextInput
               label="Endereço da API (avançado)"
@@ -113,7 +118,7 @@ export default function LoginScreen({ navigation }: Props) {
           <AppButton label="Entrar" icon="login" onPress={handleLogin} loading={loading} />
           <AppButton label={mostrarServidor ? 'Ocultar configuração avançada' : 'Configuração avançada'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
           <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} disabled={loading} style={styles.forgot} />
-          <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou idoso maria@lifeguard.test. Senha: Teste123!" />
+          <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou paciente maria@lifeguard.test. Senha: Teste123!" />
           <View style={styles.createAccount}>
             <Text style={styles.createText}>Ainda não tem conta?</Text>
             <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} disabled={loading} />

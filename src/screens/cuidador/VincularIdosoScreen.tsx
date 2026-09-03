@@ -51,14 +51,14 @@ export default function VincularIdosoScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BackHeader title="Vincular idoso" onBack={() => navigation.goBack()} />
+      <BackHeader title="Vincular paciente" onBack={() => navigation.goBack()} />
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <View style={styles.hero}>
           <View style={styles.icon}><MaterialCommunityIcons name="account-heart-outline" size={34} color={colors.coral} /></View>
           <Text style={styles.title}>Adicione alguém aos seus cuidados</Text>
-          <Text style={styles.instrucao}>Peça para o idoso gerar um código na tela “Cuidadores” e digite abaixo.</Text>
+          <Text style={styles.instrucao}>Peça ao paciente para gerar um código na tela “Cuidadores” e digite-o abaixo.</Text>
         </View>
 
         <AppTextInput
@@ -88,7 +88,7 @@ export default function VincularIdosoScreen({ navigation }: Props) {
           variant="secondary"
           onPress={handleQrCode}
         />
-        <InlineNotice tone="warning" message="O código expira em 10 minutos e só deve ser usado com autorização do idoso." />
+        <InlineNotice tone="warning" message="O código expira em 15 minutos e só deve ser usado com autorização do paciente." />
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

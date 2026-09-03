@@ -3,7 +3,7 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/lifeguard-icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,9 @@
     },
     "android": {
       "package": "com.mdantasc.lifeguard",
-      "versionCode": 7,
+      "versionCode": 8,
+      "googleServicesFile": "./google-services.json",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/lifeguard-mark.png",
         "backgroundColor": "#1B3A3F"
@@ -42,6 +44,13 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "color": "#E86F51",
+          "defaultChannel": "alertas"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#F6F1E7",
@@ -64,6 +73,17 @@
         "projectId": "92c95f11-213c-4abb-80d7-530ac17bfcdb"
       }
     },
-    "owner": "mdantasc"
+    "owner": "mdantasc",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/92c95f11-213c-4abb-80d7-530ac17bfcdb",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
+    }
   }
 }

@@ -31,7 +31,7 @@ A API fica disponível em `http://localhost:3333`. Verifique com `GET /health`.
 ## Contas de demonstração
 
 - Cuidador: `ana@lifeguard.test` / `Teste123!`
-- Idoso: `maria@lifeguard.test` / `Teste123!`
+- Paciente: `maria@lifeguard.test` / `Teste123!`
 
 ## Endpoints iniciais
 
@@ -47,6 +47,9 @@ A API fica disponível em `http://localhost:3333`. Verifique com `GET /health`.
 - `GET /api/idosos/:idosoId/leituras`
 - `GET /api/idosos/:idosoId/limites`
 - `PUT /api/idosos/:idosoId/limites`
+- `POST /api/notificacoes/token`
+- `DELETE /api/notificacoes/token`
+- `POST /api/notificacoes/teste`
 - `GET /api/alertas`
 - `PATCH /api/alertas/:alertaId`
 

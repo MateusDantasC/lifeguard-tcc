@@ -30,8 +30,8 @@ export default function RecuperarSenhaScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Recuperar senha" onBack={() => navigation.goBack()} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.intro}>
             <Text style={styles.title}>{sent ? 'Confira seu e-mail' : 'Vamos recuperar seu acesso'}</Text>
             <Text style={styles.description}>

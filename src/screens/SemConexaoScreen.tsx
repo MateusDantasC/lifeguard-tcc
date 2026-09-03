@@ -6,19 +6,18 @@ import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/theme';
 import BackHeader from '../components/BackHeader';
 import EmptyState from '../components/EmptyState';
+import { checkApiConnection } from '../services/connectivity';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SemConexao'>;
 
 export default function SemConexaoScreen({ navigation }: Props) {
   const [retrying, setRetrying] = useState(false);
 
-  function retry() {
+  async function retry() {
     setRetrying(true);
-    // TODO: substituir pela verificação real de rede e repetição da requisição anterior
-    setTimeout(() => {
-      setRetrying(false);
-      navigation.goBack();
-    }, 700);
+    const connected = await checkApiConnection();
+    setRetrying(false);
+    if (connected) navigation.goBack();
   }
 
   return (
@@ -30,7 +29,7 @@ export default function SemConexaoScreen({ navigation }: Props) {
           title={retrying ? 'Verificando conexão...' : 'Não foi possível atualizar'}
           message="Confira sua internet e tente novamente. Seus últimos dados continuam disponíveis no aplicativo."
           actionLabel={retrying ? undefined : 'Tentar novamente'}
-          onAction={retrying ? undefined : retry}
+          onAction={retrying ? undefined : () => void retry()}
         />
       </View>
     </SafeAreaView>

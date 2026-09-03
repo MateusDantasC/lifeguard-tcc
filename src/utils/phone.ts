@@ -1,7 +1,15 @@
-import { AsYouType, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
+import { AsYouType, parsePhoneNumberFromString, validatePhoneNumberLength, type CountryCode } from 'libphonenumber-js';
+
+export function limitNationalPhone(value: string, country: CountryCode) {
+  let digits = value.replace(/\D/g, '');
+  while (digits && validatePhoneNumberLength(digits, country) === 'TOO_LONG') {
+    digits = digits.slice(0, -1);
+  }
+  return digits;
+}
 
 export function formatNationalPhone(value: string, country: CountryCode) {
-  return new AsYouType(country).input(value.replace(/\D/g, ''));
+  return new AsYouType(country).input(limitNationalPhone(value, country));
 }
 
 export function normalizePhone(value: string, country: CountryCode) {

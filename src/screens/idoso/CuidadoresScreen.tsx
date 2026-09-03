@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Linking, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -93,7 +93,7 @@ export default function CuidadoresScreen({ navigation }: Props) {
         {cuidadores.length === 0 ? <Text style={styles.empty}>Nenhum cuidador vinculado no momento.</Text> : cuidadores.map((cuidador) => (
           <Card key={cuidador.id} style={styles.cuidadorCard}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarLabel}>{cuidador.nome.charAt(0)}</Text>
+              {cuidador.foto ? <Image source={{ uri: cuidador.foto }} style={styles.avatarImage} /> : <Text style={styles.avatarLabel}>{cuidador.nome.charAt(0)}</Text>}
             </View>
             <View style={styles.cuidadorInfo}>
               <Text style={styles.cuidadorNome}>{cuidador.nome}</Text>
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink, marginBottom: 12 },
   cuidadorCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 20 },
   avatarLabel: { fontFamily: fonts.bodyBold, color: colors.sand, fontSize: 14 },
   cuidadorInfo: { flex: 1 },
   cuidadorNome: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },

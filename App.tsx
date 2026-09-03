@@ -13,6 +13,9 @@ import { useAuthStore } from './src/store/authStore';
 import { apiRequest, ApiError } from './src/services/api';
 import type { AuthUser } from './src/store/authStore';
 import AppErrorBoundary from './src/components/AppErrorBoundary';
+import ConnectionBanner from './src/components/ConnectionBanner';
+import { checkForAppUpdate } from './src/services/updates';
+import PushRegistrationManager from './src/components/PushRegistrationManager';
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 450, fade: true });
@@ -82,12 +85,19 @@ export default function App() {
     if (appReady) void SplashScreen.hideAsync();
   }, [appReady]);
 
+  useEffect(() => {
+    if (!appReady) return;
+    void checkForAppUpdate();
+  }, [appReady]);
+
   if (!appReady) return null;
 
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }}>
         <StatusBar style="dark" />
+        <ConnectionBanner />
+        <PushRegistrationManager />
         <AppErrorBoundary>
           <AppNavigator />
         </AppErrorBoundary>
