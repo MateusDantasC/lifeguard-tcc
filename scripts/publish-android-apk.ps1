@@ -5,11 +5,17 @@ $appConfig = Get-Content (Join-Path $projectRoot "app.json") -Raw | ConvertFrom-
 $version = $appConfig.expo.version
 $tag = "v$version"
 $apkPath = Join-Path $projectRoot "dist\lifeguard.apk"
+$buildScript = Join-Path $PSScriptRoot "build-android-apk.ps1"
 $repository = "MateusDantasC/lifeguard-tcc"
 $portableGh = Join-Path $projectRoot ".tools\bin\gh.exe"
 
-if (-not (Test-Path $apkPath)) {
-    throw "APK nao encontrado. Execute npm run apk:local primeiro."
+if (-not (Test-Path $buildScript)) {
+    throw "Script de compilacao nao encontrado em $buildScript"
+}
+
+& $buildScript
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $apkPath)) {
+    throw "Falha ao gerar o APK antes da publicacao."
 }
 
 $ghCommand = Get-Command gh -ErrorAction SilentlyContinue
