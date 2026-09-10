@@ -2,14 +2,18 @@
 
 Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionadas ao ESP32 e ao simulador ficam deliberadamente para o final.
 
-## 1. Conta, privacidade e segurança
+## Concluído sem hardware
 
 - Alteração de senha para usuários autenticados.
-- Exclusão de conta com confirmação e tratamento dos vínculos.
-- Termos de Uso e Política de Privacidade completos e acessíveis dentro do aplicativo.
+- Exclusão de conta com confirmação e tratamento em cascata dos dados relacionados.
+- Termos de Uso e Política de Privacidade acessíveis no cadastro e no perfil.
+- Proteção básica contra tentativas repetidas de login.
+- Central de ajuda, perguntas frequentes e identificação da versão instalada.
+
+## 1. Conta, privacidade e segurança
+
 - Fluxo para exportar ou solicitar os próprios dados, alinhado à LGPD.
 - Sessões revogáveis e opção de sair de todos os aparelhos.
-- Proteção contra tentativas repetidas de login e abuso da API.
 - Recuperação de senha e confirmação de e-mail, quando o serviço de e-mail for definido.
 
 ## 2. Experiência e acessibilidade
@@ -19,7 +23,6 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 - Cache seguro dos últimos dados para consulta sem conexão.
 - Revisão completa de estados vazios, carregamento, erro e tentativa novamente.
 - Revisão de acessibilidade: leitor de tela, contraste, tamanhos de toque e textos ampliados.
-- Tela de ajuda, perguntas frequentes e orientações de emergência.
 - Histórico de alterações importantes no perfil do paciente.
 
 ## 3. Confiabilidade da infraestrutura
@@ -38,7 +41,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 - Integração contínua para executar verificações a cada envio ao GitHub.
 - Automação segura do deploy da API e das atualizações EAS.
 - Site oficial com download do APK, versão e instruções de instalação.
-- Tela de versão e notas da atualização no aplicativo.
+- Notas da atualização no aplicativo.
 - Monitoramento de falhas do aplicativo em produção.
 - Material e roteiro de demonstração para a VISIT.
 

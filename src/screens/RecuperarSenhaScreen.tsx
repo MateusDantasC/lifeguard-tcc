@@ -33,15 +33,15 @@ export default function RecuperarSenhaScreen({ navigation }: Props) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.intro}>
-            <Text style={styles.title}>{sent ? 'Confira seu e-mail' : 'Vamos recuperar seu acesso'}</Text>
+            <Text style={styles.title}>{sent ? 'Recurso em preparação' : 'Vamos recuperar seu acesso'}</Text>
             <Text style={styles.description}>
-              {sent ? `Enviamos as instruções para ${email.trim()}.` : 'Informe o e-mail cadastrado para receber as instruções de redefinição.'}
+              {sent ? `A recuperação para ${email.trim()} ainda não envia mensagens reais.` : 'Informe o e-mail cadastrado para consultar a disponibilidade da recuperação.'}
             </Text>
           </View>
 
           {sent ? (
             <>
-              <InlineNotice tone="success" message="No protótipo, o envio foi simulado com sucesso. A entrega real será ligada ao backend." />
+              <InlineNotice tone="warning" message="Nenhum e-mail foi enviado. Estamos preparando uma recuperação segura antes de liberar essa função." />
               <AppButton label="Voltar para entrar" onPress={() => navigation.navigate('Login')} style={styles.button} />
               <AppButton label="Usar outro e-mail" variant="text" onPress={() => setSent(false)} />
             </>

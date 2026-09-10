@@ -6,6 +6,8 @@ export type RootStackParamList = {
   HomeIdoso: undefined;
   HomeCuidador: undefined;
   Perfil: undefined;
+  ContaSeguranca: undefined;
+  AjudaSobre: undefined;
   Historico: { idosoId?: string; nome?: string } | undefined;
   MeuDispositivo: undefined;
   ParearDispositivo: undefined;

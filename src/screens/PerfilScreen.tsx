@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -276,6 +276,11 @@ export default function PerfilScreen({ navigation }: Props) {
 
           {!editing ? <PushNotificationsCard /> : null}
 
+          {!editing ? <Card style={styles.card}>
+            <ProfileActionRow icon="shield-account-outline" label="Conta e segurança" onPress={() => navigation.navigate('ContaSeguranca')} />
+            <ProfileActionRow icon="help-circle-outline" label="Ajuda e sobre o LifeGuard" onPress={() => navigation.navigate('AjudaSobre')} last />
+          </Card> : null}
+
           {editing ? <>
             {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
             <AppButton label="Salvar alterações" icon="content-save-outline" onPress={handleSave} loading={loading} disabled={loading} />
@@ -291,6 +296,10 @@ function ProfileRow({ icon, label, value, last }: { icon: keyof typeof MaterialC
   return <View style={[styles.row, !last && styles.rowBorder]}><View style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><View style={styles.rowCopy}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View></View>;
 }
 
+function ProfileActionRow({ icon, label, onPress, last }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; onPress: () => void; last?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.actionRow, !last && styles.rowBorder, pressed && styles.actionPressed]}><View style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><Text style={styles.actionLabel}>{label}</Text><MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} /></Pressable>;
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand }, flex: { flex: 1 }, container: { paddingHorizontal: 20, paddingBottom: 40 },
   identity: { alignItems: 'center', paddingVertical: 12, marginBottom: 20 },
@@ -304,5 +313,6 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 86, paddingTop: 14, paddingBottom: 14 }, row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border }, rowIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.coralSoft, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1 }, rowLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary }, rowValue: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 21, color: colors.ink, marginTop: 2 },
+  actionRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }, actionLabel: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink }, actionPressed: { opacity: 0.65 },
   error: { fontFamily: fonts.body, fontSize: 14, color: colors.emberText, marginBottom: 14 },
 });

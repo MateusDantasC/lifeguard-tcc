@@ -6,20 +6,23 @@ import { Gender, UserType } from '../generated/prisma/enums.js';
 import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { assertLoginAllowed, clearLoginFailures, registerLoginFailure } from '../middleware/login-rate-limit.js';
 import { serializeUser } from '../serializers.js';
+
+const strongPasswordSchema = z.string()
+  .min(8, 'A senha deve ter pelo menos 8 caracteres.')
+  .max(72, 'A senha deve ter no máximo 72 caracteres.')
+  .regex(/[a-zà-öø-ÿ]/, 'A senha deve ter uma letra minúscula.')
+  .regex(/[A-ZÀ-ÖØ-Þ]/, 'A senha deve ter uma letra maiúscula.')
+  .regex(/\d/, 'A senha deve ter um número.')
+  .regex(/[^\p{L}\p{N}\s]/u, 'A senha deve ter um caractere especial.');
 
 const registerSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
   telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.'),
   genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']),
-  senha: z.string()
-    .min(8, 'A senha deve ter pelo menos 8 caracteres.')
-    .max(72, 'A senha deve ter no máximo 72 caracteres.')
-    .regex(/[a-zà-öø-ÿ]/, 'A senha deve ter uma letra minúscula.')
-    .regex(/[A-ZÀ-ÖØ-Þ]/, 'A senha deve ter uma letra maiúscula.')
-    .regex(/\d/, 'A senha deve ter um número.')
-    .regex(/[^\p{L}\p{N}\s]/u, 'A senha deve ter um caractere especial.'),
+  senha: strongPasswordSchema,
   tipo: z.enum(['idoso', 'cuidador']),
   aceitouTermos: z.literal(true, { error: 'É necessário aceitar os Termos de Uso.' }),
   aceitouPrivacidade: z.literal(true, { error: 'É necessário aceitar a Política de Privacidade.' }),
@@ -98,11 +101,14 @@ authRouter.post('/cadastro', async (req, res) => {
 
 authRouter.post('/login', async (req, res) => {
   const input = loginSchema.parse(req.body);
+  assertLoginAllowed(req, input.email);
   const user = await prisma.user.findUnique({ where: { email: input.email }, include: { elderProfile: true } });
 
   if (!user || !(await compare(input.senha, user.passwordHash))) {
+    registerLoginFailure(req, input.email);
     throw new HttpError(401, 'E-mail ou senha incorretos.', 'INVALID_CREDENTIALS');
   }
+  clearLoginFailures(req, input.email);
 
   res.json({
     token: await createAccessToken(user.id, user.type),
@@ -153,4 +159,35 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
     include: { elderProfile: true },
   });
   res.json({ usuario: serializeUser(user, user.elderProfile) });
+});
+
+authRouter.patch('/senha', requireAuth, async (req, res) => {
+  const input = z.object({
+    senhaAtual: z.string().min(1, 'Informe sua senha atual.'),
+    novaSenha: strongPasswordSchema,
+  }).parse(req.body);
+  const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  if (!(await compare(input.senhaAtual, user.passwordHash))) {
+    throw new HttpError(401, 'A senha atual está incorreta.', 'CURRENT_PASSWORD_INCORRECT');
+  }
+  if (await compare(input.novaSenha, user.passwordHash)) {
+    throw new HttpError(400, 'A nova senha deve ser diferente da senha atual.', 'PASSWORD_UNCHANGED');
+  }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await hash(input.novaSenha, 12) },
+  });
+  res.status(204).send();
+});
+
+authRouter.delete('/me', requireAuth, async (req, res) => {
+  const input = z.object({ senha: z.string().min(1, 'Informe sua senha para excluir a conta.') }).parse(req.body);
+  const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  if (!(await compare(input.senha, user.passwordHash))) {
+    throw new HttpError(401, 'A senha informada está incorreta.', 'CURRENT_PASSWORD_INCORRECT');
+  }
+  await prisma.user.delete({ where: { id: user.id } });
+  res.status(204).send();
 });

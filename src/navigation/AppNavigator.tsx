@@ -6,6 +6,8 @@ import CadastroScreen from '../screens/CadastroScreen';
 import RecuperarSenhaScreen from '../screens/RecuperarSenhaScreen';
 import DocumentoLegalScreen from '../screens/DocumentoLegalScreen';
 import PerfilScreen from '../screens/PerfilScreen';
+import ContaSegurancaScreen from '../screens/ContaSegurancaScreen';
+import AjudaSobreScreen from '../screens/AjudaSobreScreen';
 import SemConexaoScreen from '../screens/SemConexaoScreen';
 import HomeIdosoScreen from '../screens/idoso/HomeIdosoScreen';
 import HomeCuidadorScreen from '../screens/cuidador/HomeCuidadorScreen';
@@ -43,6 +45,8 @@ export default function AppNavigator() {
         <Stack.Screen name="HomeIdoso" component={HomeIdosoScreen} />
         <Stack.Screen name="HomeCuidador" component={HomeCuidadorScreen} />
         <Stack.Screen name="Perfil" component={PerfilScreen} />
+        <Stack.Screen name="ContaSeguranca" component={ContaSegurancaScreen} />
+        <Stack.Screen name="AjudaSobre" component={AjudaSobreScreen} />
         <Stack.Screen name="Historico" component={HistoricoScreen} />
         <Stack.Screen name="MeuDispositivo" component={MeuDispositivoScreen} />
         <Stack.Screen name="ParearDispositivo" component={ParearDispositivoScreen} />
