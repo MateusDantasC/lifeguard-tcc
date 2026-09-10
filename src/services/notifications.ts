@@ -69,5 +69,5 @@ export async function unregisterPushNotifications() {
 }
 
 export async function sendTestNotification() {
-  await apiRequest('/notificacoes/teste', { method: 'POST' });
+  return apiRequest<{ enviadas: number; destino: 'cuidadores' | 'este_aparelho' }>('/notificacoes/teste', { method: 'POST' });
 }
