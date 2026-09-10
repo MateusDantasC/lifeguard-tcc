@@ -84,7 +84,21 @@ model User {
   alerts                 Alert[]
   notificationRecipients NotificationSent[]   @relation("NotificationRecipient")
   pushTokens             PushToken[]
+  sessions               AuthSession[]
   linkCodes              ElderLinkCode[]
+}
+
+model AuthSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  sessionVersion Int
+  createdAt      DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sessionVersion, revokedAt, expiresAt])
 }
 
 model ElderProfile {

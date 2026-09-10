@@ -20,6 +20,26 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     if (!user || user.type !== token.type || user.sessionVersion !== token.sessionVersion) {
       throw new Error('Sessão revogada');
     }
+    if (token.sessionId) {
+      const session = await prisma.authSession.findFirst({
+        where: {
+          id: token.sessionId,
+          userId: token.userId,
+          sessionVersion: token.sessionVersion,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { lastSeenAt: true },
+      });
+      if (!session) throw new Error('Sessão revogada ou expirada');
+
+      if (Date.now() - session.lastSeenAt.getTime() > 5 * 60 * 1000) {
+        void prisma.authSession.update({
+          where: { id: token.sessionId },
+          data: { lastSeenAt: new Date() },
+        }).catch(() => undefined);
+      }
+    }
     req.auth = token;
     next();
   } catch {

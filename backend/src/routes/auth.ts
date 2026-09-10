@@ -33,6 +33,19 @@ const loginSchema = z.object({
   senha: z.string().min(1),
 });
 
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function createTrackedSession(user: { id: string; type: UserType; sessionVersion: number }) {
+  const session = await prisma.authSession.create({
+    data: {
+      userId: user.id,
+      sessionVersion: user.sessionVersion,
+      expiresAt: new Date(Date.now() + SESSION_DURATION_MS),
+    },
+  });
+  return createAccessToken(user.id, user.type, user.sessionVersion, session.id);
+}
+
 const updateProfileSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
@@ -94,7 +107,7 @@ authRouter.post('/cadastro', async (req, res) => {
   });
 
   res.status(201).json({
-    token: await createAccessToken(user.id, user.type, user.sessionVersion),
+    token: await createTrackedSession(user),
     usuario: serializeUser(user, user.elderProfile),
   });
 });
@@ -111,7 +124,7 @@ authRouter.post('/login', async (req, res) => {
   clearLoginFailures(req, input.email);
 
   res.json({
-    token: await createAccessToken(user.id, user.type, user.sessionVersion),
+    token: await createTrackedSession(user),
     usuario: serializeUser(user, user.elderProfile),
   });
 });
@@ -186,12 +199,37 @@ authRouter.post('/sessoes/revogar-outras', requireAuth, async (req, res) => {
     tokenPushAtual: z.string().trim().max(300).regex(/^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/).nullable().optional(),
   }).parse(req.body ?? {});
 
-  const user = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const now = new Date();
     const updated = await tx.user.update({
       where: { id: req.auth!.userId },
       data: { sessionVersion: { increment: 1 } },
       select: { id: true, type: true, sessionVersion: true },
     });
+    await tx.authSession.updateMany({
+      where: {
+        userId: updated.id,
+        revokedAt: null,
+        ...(req.auth!.sessionId ? { id: { not: req.auth!.sessionId } } : {}),
+      },
+      data: { revokedAt: now },
+    });
+    const session = req.auth!.sessionId
+      ? await tx.authSession.update({
+          where: { id: req.auth!.sessionId },
+          data: {
+            sessionVersion: updated.sessionVersion,
+            lastSeenAt: now,
+            expiresAt: new Date(now.getTime() + SESSION_DURATION_MS),
+          },
+        })
+      : await tx.authSession.create({
+          data: {
+            userId: updated.id,
+            sessionVersion: updated.sessionVersion,
+            expiresAt: new Date(now.getTime() + SESSION_DURATION_MS),
+          },
+        });
     await tx.pushToken.updateMany({
       where: {
         userId: updated.id,
@@ -200,13 +238,62 @@ authRouter.post('/sessoes/revogar-outras', requireAuth, async (req, res) => {
       },
       data: { active: false },
     });
-    return updated;
+    return { user: updated, session };
   });
 
   res.json({
-    token: await createAccessToken(user.id, user.type, user.sessionVersion),
+    token: await createAccessToken(result.user.id, result.user.type, result.user.sessionVersion, result.session.id),
+    quantidade: 1,
     mensagem: 'Os outros dispositivos foram desconectados.',
   });
+});
+
+authRouter.get('/sessoes/resumo', requireAuth, async (req, res) => {
+  const now = new Date();
+  let sessionId = req.auth!.sessionId;
+  let replacementToken: string | undefined;
+
+  if (!sessionId) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.auth!.userId },
+      select: { id: true, type: true, sessionVersion: true },
+    });
+    if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+    const session = await prisma.authSession.create({
+      data: {
+        userId: user.id,
+        sessionVersion: user.sessionVersion,
+        expiresAt: new Date(now.getTime() + SESSION_DURATION_MS),
+      },
+    });
+    sessionId = session.id;
+    replacementToken = await createAccessToken(user.id, user.type, user.sessionVersion, session.id);
+  }
+
+  await prisma.authSession.updateMany({
+    where: { userId: req.auth!.userId, revokedAt: null, expiresAt: { lte: now } },
+    data: { revokedAt: now },
+  });
+  const quantidade = await prisma.authSession.count({
+    where: {
+      userId: req.auth!.userId,
+      sessionVersion: req.auth!.sessionVersion,
+      revokedAt: null,
+      expiresAt: { gt: now },
+    },
+  });
+
+  res.json({ quantidade, ...(replacementToken ? { token: replacementToken } : {}) });
+});
+
+authRouter.post('/logout', requireAuth, async (req, res) => {
+  if (req.auth!.sessionId) {
+    await prisma.authSession.updateMany({
+      where: { id: req.auth!.sessionId, userId: req.auth!.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+  res.status(204).send();
 });
 
 authRouter.delete('/me', requireAuth, async (req, res) => {

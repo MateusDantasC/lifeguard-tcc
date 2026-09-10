@@ -190,7 +190,7 @@ export default function PerfilScreen({ navigation }: Props) {
     Alert.alert('Sair da conta', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sair', style: 'destructive', onPress: () => {
-        void unregisterPushNotifications().catch(() => undefined).finally(() => {
+        void unregisterPushNotifications().catch(() => undefined).then(() => apiRequest('/auth/logout', { method: 'POST' })).catch(() => undefined).finally(() => {
           logout(); resetMonitoring(); navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         });
       } },

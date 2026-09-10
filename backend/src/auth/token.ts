@@ -4,8 +4,8 @@ import { UserType } from '../generated/prisma/enums.js';
 
 const secret = new TextEncoder().encode(env.JWT_SECRET);
 
-export async function createAccessToken(userId: string, type: UserType, sessionVersion: number) {
-  return new SignJWT({ type, sessionVersion })
+export async function createAccessToken(userId: string, type: UserType, sessionVersion: number, sessionId?: string) {
+  return new SignJWT({ type, sessionVersion, ...(sessionId ? { sid: sessionId } : {}) })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
     .setIssuedAt()
@@ -21,5 +21,6 @@ export async function verifyAccessToken(token: string) {
   }
 
   const sessionVersion = typeof payload.sessionVersion === 'number' ? payload.sessionVersion : 0;
-  return { userId: payload.sub, type: payload.type, sessionVersion };
+  const sessionId = typeof payload.sid === 'string' ? payload.sid : undefined;
+  return { userId: payload.sub, type: payload.type, sessionVersion, sessionId };
 }

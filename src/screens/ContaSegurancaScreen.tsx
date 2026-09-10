@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
 import BackHeader from '../components/BackHeader';
 import Card from '../components/Card';
@@ -36,6 +37,27 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [revokingSessions, setRevokingSessions] = useState(false);
   const [sessionError, setSessionError] = useState('');
+  const [sessionCount, setSessionCount] = useState<number | null>(null);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+
+  const loadSessionCount = useCallback(async () => {
+    if (!user) return;
+    setLoadingSessions(true);
+    setSessionError('');
+    try {
+      const response = await apiRequest<{ quantidade: number; token?: string }>('/auth/sessoes/resumo');
+      setSessionCount(response.quantidade);
+      if (response.token) setSession(response.token, user, rememberSession);
+    } catch (error) {
+      setSessionError(error instanceof ApiError ? error.message : 'Não foi possível consultar os dispositivos conectados.');
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [rememberSession, setSession, user]);
+
+  useFocusEffect(useCallback(() => {
+    void loadSessionCount();
+  }, [loadSessionCount]));
 
   function confirmRevokeOtherSessions() {
     Alert.alert(
@@ -54,11 +76,12 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     setSessionError('');
     try {
       const currentPushToken = await getStoredPushToken().catch(() => null);
-      const response = await apiRequest<{ token: string; mensagem: string }>('/auth/sessoes/revogar-outras', {
+      const response = await apiRequest<{ token: string; quantidade: number; mensagem: string }>('/auth/sessoes/revogar-outras', {
         method: 'POST',
         body: JSON.stringify({ tokenPushAtual: currentPushToken }),
       });
       setSession(response.token, user, rememberSession);
+      setSessionCount(response.quantidade);
       Alert.alert('Outros dispositivos desconectados', 'Somente este aparelho continua com acesso à sua conta.');
     } catch (error) {
       setSessionError(error instanceof ApiError ? error.message : 'Não foi possível desconectar os outros dispositivos.');
@@ -130,9 +153,14 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Dispositivos conectados</Text>
           <Text style={styles.helper}>Encerre o acesso em outros aparelhos caso tenha perdido um celular ou usado sua conta em um dispositivo compartilhado.</Text>
           <Card style={styles.card}>
+            <Text accessibilityLiveRegion="polite" style={styles.sessionCount}>
+              {loadingSessions || sessionCount === null
+                ? 'Consultando dispositivos logados...'
+                : `Dispositivos logados nesta conta: ${sessionCount}`}
+            </Text>
             <InlineNotice message="Este aparelho permanecerá conectado. Os demais precisarão informar e-mail e senha novamente." />
             {sessionError ? <Text accessibilityRole="alert" style={styles.error}>{sessionError}</Text> : null}
-            <AppButton label="Desconectar outros dispositivos" icon="logout-variant" variant="secondary" onPress={confirmRevokeOtherSessions} loading={revokingSessions} disabled={busy} />
+            <AppButton label="Desconectar outros dispositivos" icon="logout-variant" variant="secondary" onPress={confirmRevokeOtherSessions} loading={revokingSessions} disabled={busy || loadingSessions || sessionCount === null || sessionCount <= 1} />
           </Card>
 
           <Text style={[styles.sectionTitle, styles.dangerTitle]}>Excluir conta</Text>
@@ -156,5 +184,6 @@ const styles = StyleSheet.create({
   dangerTitle: { color: colors.emberText, marginTop: 12 },
   helper: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginTop: 4, marginBottom: 12 },
   card: { marginBottom: 22 }, error: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.emberText, marginBottom: 14 },
+  sessionCount: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22, color: colors.ink, marginBottom: 14 },
   firstDeleteField: { marginTop: 16 },
 });

@@ -7,6 +7,7 @@ declare global {
         userId: string;
         type: UserType;
         sessionVersion: number;
+        sessionId?: string;
       };
     }
   }
