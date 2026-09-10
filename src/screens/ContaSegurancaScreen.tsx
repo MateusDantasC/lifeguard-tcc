@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet, Text } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -160,9 +162,17 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     setExportError('');
     try {
       const report = await apiRequest<Record<string, unknown>>('/auth/me/exportacao');
-      await Share.share({
-        title: 'Meus dados do LifeGuard',
-        message: JSON.stringify(report, null, 2),
+      if (!(await Sharing.isAvailableAsync())) {
+        setExportError('O compartilhamento de arquivos não está disponível neste dispositivo.');
+        return;
+      }
+      const file = new File(Paths.cache, 'lifeguard-meus-dados.json');
+      file.create({ overwrite: true });
+      file.write(JSON.stringify(report, null, 2));
+      await Sharing.shareAsync(file.uri, {
+        dialogTitle: 'Compartilhar meus dados do LifeGuard',
+        mimeType: 'application/json',
+        UTI: 'public.json',
       });
     } catch (error) {
       setExportError(error instanceof ApiError ? error.message : 'Não foi possível gerar ou compartilhar seus dados.');
@@ -258,7 +268,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
           </Card>
 
           <Text style={styles.sectionTitle}>Privacidade e seus dados</Text>
-          <Text style={styles.helper}>Gere uma cópia das informações associadas à sua conta para salvar ou compartilhar pelo celular.</Text>
+          <Text style={styles.helper}>Gere um arquivo JSON com as informações associadas à sua conta para salvar ou compartilhar pelo celular.</Text>
           <Card style={styles.card}>
             <InlineNotice message="Por segurança, o relatório nunca inclui senhas, códigos temporários ou tokens de acesso e notificação." />
             {exportError ? <Text accessibilityRole="alert" style={styles.exportError}>{exportError}</Text> : null}
