@@ -70,6 +70,7 @@ model User {
   termsAcceptedAt        DateTime?
   privacyAcceptedAt      DateTime?
   legalDocumentVersion   String?
+  sessionVersion         Int                  @default(0)
   notifyHealthAlerts     Boolean              @default(true)
   notifyLinkUpdates      Boolean              @default(true)
   createdAt              DateTime             @default(now())

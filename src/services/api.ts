@@ -3,6 +3,7 @@ import { useConnectionStore } from '../store/connectionStore';
 let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://152-67-44-170.sslip.io/api';
 
 let accessToken: string | null = null;
+let unauthorizedHandler: (() => void) | null = null;
 
 function markServerOnline() {
   useConnectionStore.getState().setOnline();
@@ -25,6 +26,10 @@ export class ApiError extends Error {
 
 export function setApiToken(token: string | null) {
   accessToken = token;
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
 }
 
 export function getApiUrl() {
@@ -53,6 +58,10 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     const body = response.status === 204 ? null : await response.json().catch(() => null);
     markServerOnline();
     if (!response.ok) {
+      if (response.status === 401 && accessToken) {
+        accessToken = null;
+        unauthorizedHandler?.();
+      }
       throw new ApiError(body?.erro ?? 'Não foi possível concluir a solicitação.', response.status, body?.codigo);
     }
     return body as T;

@@ -6,6 +6,7 @@ declare global {
       auth?: {
         userId: string;
         type: UserType;
+        sessionVersion: number;
       };
     }
   }

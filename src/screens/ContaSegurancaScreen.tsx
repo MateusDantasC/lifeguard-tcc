@@ -13,13 +13,16 @@ import { apiRequest, ApiError } from '../services/api';
 import { isStrongPassword, passwordValidationMessage } from '../utils/validation';
 import { useAuthStore } from '../store/authStore';
 import { useMonitoringStore } from '../store/monitoringStore';
-import { unregisterPushNotifications } from '../services/notifications';
+import { getStoredPushToken, unregisterPushNotifications } from '../services/notifications';
 import { colors, fonts } from '../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ContaSeguranca'>;
 
 export default function ContaSegurancaScreen({ navigation }: Props) {
   const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+  const rememberSession = useAuthStore((state) => state.rememberSession);
+  const setSession = useAuthStore((state) => state.setSession);
   const resetMonitoring = useMonitoringStore((state) => state.reset);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -31,6 +34,38 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   const [confirmacaoExclusao, setConfirmacaoExclusao] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [revokingSessions, setRevokingSessions] = useState(false);
+  const [sessionError, setSessionError] = useState('');
+
+  function confirmRevokeOtherSessions() {
+    Alert.alert(
+      'Desconectar outros dispositivos?',
+      'Todos os outros celulares e computadores precisarão entrar novamente. Este aparelho continuará conectado.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Desconectar', style: 'destructive', onPress: () => void revokeOtherSessions() },
+      ],
+    );
+  }
+
+  async function revokeOtherSessions() {
+    if (!user) return;
+    setRevokingSessions(true);
+    setSessionError('');
+    try {
+      const currentPushToken = await getStoredPushToken().catch(() => null);
+      const response = await apiRequest<{ token: string; mensagem: string }>('/auth/sessoes/revogar-outras', {
+        method: 'POST',
+        body: JSON.stringify({ tokenPushAtual: currentPushToken }),
+      });
+      setSession(response.token, user, rememberSession);
+      Alert.alert('Outros dispositivos desconectados', 'Somente este aparelho continua com acesso à sua conta.');
+    } catch (error) {
+      setSessionError(error instanceof ApiError ? error.message : 'Não foi possível desconectar os outros dispositivos.');
+    } finally {
+      setRevokingSessions(false);
+    }
+  }
 
   async function changePassword() {
     if (!senhaAtual) { setPasswordError('Informe sua senha atual.'); return; }
@@ -72,7 +107,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     } finally { setDeleting(false); }
   }
 
-  const busy = changingPassword || deleting;
+  const busy = changingPassword || deleting || revokingSessions;
   const passwordIcon = mostrarSenhas ? 'eye-off-outline' : 'eye-outline';
   const passwordIconLabel = mostrarSenhas ? 'Ocultar senhas' : 'Mostrar senhas';
 
@@ -90,6 +125,14 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
             <AppTextInput label="Confirmar nova senha" value={confirmarSenha} onChangeText={(value) => { setConfirmarSenha(value); setPasswordError(''); }} secureTextEntry={!mostrarSenhas} autoCapitalize="none" autoComplete="new-password" editable={!busy} maxLength={72} required />
             {passwordError ? <Text accessibilityRole="alert" style={styles.error}>{passwordError}</Text> : null}
             <AppButton label="Alterar senha" icon="lock-reset" onPress={() => void changePassword()} loading={changingPassword} disabled={busy} />
+          </Card>
+
+          <Text style={styles.sectionTitle}>Dispositivos conectados</Text>
+          <Text style={styles.helper}>Encerre o acesso em outros aparelhos caso tenha perdido um celular ou usado sua conta em um dispositivo compartilhado.</Text>
+          <Card style={styles.card}>
+            <InlineNotice message="Este aparelho permanecerá conectado. Os demais precisarão informar e-mail e senha novamente." />
+            {sessionError ? <Text accessibilityRole="alert" style={styles.error}>{sessionError}</Text> : null}
+            <AppButton label="Desconectar outros dispositivos" icon="logout-variant" variant="secondary" onPress={confirmRevokeOtherSessions} loading={revokingSessions} disabled={busy} />
           </Card>
 
           <Text style={[styles.sectionTitle, styles.dangerTitle]}>Excluir conta</Text>

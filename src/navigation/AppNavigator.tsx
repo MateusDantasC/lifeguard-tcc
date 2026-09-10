@@ -32,7 +32,7 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 export default function AppNavigator() {
   const user = useAuthStore((state) => state.user);
   const pendingResponse = useRef<Notifications.NotificationResponse | null>(null);
-  const lastHandledId = useRef<string | null>(null);
+  const notificationResponse = Notifications.useLastNotificationResponse();
 
   const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
     if (!navigationRef.isReady() || !user) {
@@ -40,8 +40,6 @@ export default function AppNavigator() {
       return;
     }
 
-    const notificationId = response.notification.request.identifier;
-    if (lastHandledId.current === notificationId) return;
     const data = response.notification.request.content.data;
     const type = typeof data.tipo === 'string' ? data.tipo : '';
     let handled = false;
@@ -61,24 +59,25 @@ export default function AppNavigator() {
     }
 
     if (handled) {
-      lastHandledId.current = notificationId;
       pendingResponse.current = null;
       void Notifications.clearLastNotificationResponseAsync();
     }
   }, [user]);
 
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) handleNotificationResponse(response);
-    });
-    return () => subscription.remove();
-  }, [handleNotificationResponse]);
+    if (notificationResponse) handleNotificationResponse(notificationResponse);
+  }, [handleNotificationResponse, notificationResponse]);
 
   const handleNavigationReady = useCallback(() => {
     const response = pendingResponse.current;
     if (response) handleNotificationResponse(response);
   }, [handleNotificationResponse]);
+
+  useEffect(() => {
+    if (!user && navigationRef.isReady() && navigationRef.getCurrentRoute()?.name !== 'Login') {
+      navigationRef.resetRoot({ index: 0, routes: [{ name: 'Login' }] });
+    }
+  }, [user]);
 
   return (
     <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>

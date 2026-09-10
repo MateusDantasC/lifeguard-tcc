@@ -73,6 +73,10 @@ export async function unregisterPushNotifications() {
   }
 }
 
+export function getStoredPushToken() {
+  return SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+}
+
 export async function sendTestNotification() {
   return apiRequest<{ enviadas: number; destino: 'cuidadores' | 'este_aparelho' }>('/notificacoes/teste', { method: 'POST' });
 }

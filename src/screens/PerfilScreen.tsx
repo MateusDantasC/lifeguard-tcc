@@ -85,16 +85,7 @@ export default function PerfilScreen({ navigation }: Props) {
     || paisContato !== phoneCountry(user?.perfilIdoso?.contatoEmergenciaTelefone)
   );
 
-  usePreventRemove(hasUnsavedChanges, ({ data }) => {
-    Alert.alert(
-      'Alterações não salvas',
-      'Você fez alterações no perfil. Deseja descartá-las e sair?',
-      [
-        { text: 'Continuar editando', style: 'cancel' },
-        { text: 'Descartar alterações', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
-      ],
-    );
-  });
+  usePreventRemove(editing, () => handleCancelEditing());
 
   function resetForm() {
     setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(phoneNationalValue(user?.telefone)); setPaisTelefone(phoneCountry(user?.telefone)); setFoto(user?.foto ?? null); setGenero(user?.genero ?? null);
@@ -186,8 +177,8 @@ export default function PerfilScreen({ navigation }: Props) {
       return;
     }
     Alert.alert(
-      'Alterações não salvas',
-      'Você fez alterações no perfil. Deseja descartá-las?',
+      'Cancelar edição?',
+      'As alterações feitas no perfil serão descartadas.',
       [
         { text: 'Continuar editando', style: 'cancel' },
         { text: 'Descartar alterações', style: 'destructive', onPress: discardEditing },
@@ -209,7 +200,13 @@ export default function PerfilScreen({ navigation }: Props) {
   const profile = user?.perfilIdoso;
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <BackHeader title="Meu perfil" onBack={() => navigation.goBack()} rightIcon={editing ? undefined : 'pencil-outline'} onRightPress={editing ? undefined : () => setEditing(true)} rightLabel="Editar perfil" />
+      <BackHeader
+        title="Meu perfil"
+        onBack={editing ? handleCancelEditing : () => navigation.goBack()}
+        rightIcon={editing ? 'close' : 'pencil-outline'}
+        onRightPress={editing ? handleCancelEditing : () => setEditing(true)}
+        rightLabel={editing ? 'Cancelar edição' : 'Editar perfil'}
+      />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.identity}>

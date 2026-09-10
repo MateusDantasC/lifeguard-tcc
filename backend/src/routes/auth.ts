@@ -94,7 +94,7 @@ authRouter.post('/cadastro', async (req, res) => {
   });
 
   res.status(201).json({
-    token: await createAccessToken(user.id, user.type),
+    token: await createAccessToken(user.id, user.type, user.sessionVersion),
     usuario: serializeUser(user, user.elderProfile),
   });
 });
@@ -111,7 +111,7 @@ authRouter.post('/login', async (req, res) => {
   clearLoginFailures(req, input.email);
 
   res.json({
-    token: await createAccessToken(user.id, user.type),
+    token: await createAccessToken(user.id, user.type, user.sessionVersion),
     usuario: serializeUser(user, user.elderProfile),
   });
 });
@@ -179,6 +179,34 @@ authRouter.patch('/senha', requireAuth, async (req, res) => {
     data: { passwordHash: await hash(input.novaSenha, 12) },
   });
   res.status(204).send();
+});
+
+authRouter.post('/sessoes/revogar-outras', requireAuth, async (req, res) => {
+  const input = z.object({
+    tokenPushAtual: z.string().trim().max(300).regex(/^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/).nullable().optional(),
+  }).parse(req.body ?? {});
+
+  const user = await prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id: req.auth!.userId },
+      data: { sessionVersion: { increment: 1 } },
+      select: { id: true, type: true, sessionVersion: true },
+    });
+    await tx.pushToken.updateMany({
+      where: {
+        userId: updated.id,
+        active: true,
+        ...(input.tokenPushAtual ? { token: { not: input.tokenPushAtual } } : {}),
+      },
+      data: { active: false },
+    });
+    return updated;
+  });
+
+  res.json({
+    token: await createAccessToken(user.id, user.type, user.sessionVersion),
+    mensagem: 'Os outros dispositivos foram desconectados.',
+  });
 });
 
 authRouter.delete('/me', requireAuth, async (req, res) => {
