@@ -24,6 +24,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   const user = useAuthStore((state) => state.user);
   const rememberSession = useAuthStore((state) => state.rememberSession);
   const setSession = useAuthStore((state) => state.setSession);
+  const updateUser = useAuthStore((state) => state.updateUser);
   const resetMonitoring = useMonitoringStore((state) => state.reset);
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -39,25 +40,73 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   const [sessionError, setSessionError] = useState('');
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [confirmingVerification, setConfirmingVerification] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
 
   const loadSessionCount = useCallback(async () => {
     if (!user) return;
     setLoadingSessions(true);
     setSessionError('');
     try {
-      const response = await apiRequest<{ quantidade: number; token?: string }>('/auth/sessoes/resumo');
-      setSessionCount(response.quantidade);
-      if (response.token) setSession(response.token, user, rememberSession);
+      const [sessionsResponse, emailResponse] = await Promise.all([
+        apiRequest<{ quantidade: number; token?: string }>('/auth/sessoes/resumo'),
+        apiRequest<{ emailVerificado: boolean }>('/auth/email/status'),
+      ]);
+      setSessionCount(sessionsResponse.quantidade);
+      if (sessionsResponse.token) setSession(sessionsResponse.token, user, rememberSession);
+      if (emailResponse.emailVerificado !== user.emailVerificado) updateUser({ emailVerificado: emailResponse.emailVerificado });
     } catch (error) {
       setSessionError(error instanceof ApiError ? error.message : 'Não foi possível consultar os dispositivos conectados.');
     } finally {
       setLoadingSessions(false);
     }
-  }, [rememberSession, setSession, user]);
+  }, [rememberSession, setSession, updateUser, user]);
 
   useFocusEffect(useCallback(() => {
     void loadSessionCount();
   }, [loadSessionCount]));
+
+  async function sendVerificationCode() {
+    setSendingVerification(true);
+    setVerificationError('');
+    try {
+      const response = await apiRequest<{ emailVerificado: boolean }>('/auth/email/confirmacao/solicitar', { method: 'POST' });
+      if (response.emailVerificado) {
+        updateUser({ emailVerificado: true });
+        Alert.alert('E-mail confirmado', 'Este endereço já estava confirmado.');
+        return;
+      }
+      Alert.alert('Código enviado', `Confira a caixa de entrada e o spam de ${user?.email ?? 'seu e-mail'}.`);
+    } catch (error) {
+      setVerificationError(error instanceof ApiError ? error.message : 'Não foi possível enviar o código de confirmação.');
+    } finally {
+      setSendingVerification(false);
+    }
+  }
+
+  async function confirmEmail() {
+    if (!/^\d{6}$/.test(verificationCode)) {
+      setVerificationError('Informe o código de 6 dígitos enviado por e-mail.');
+      return;
+    }
+    setConfirmingVerification(true);
+    setVerificationError('');
+    try {
+      await apiRequest('/auth/email/confirmacao/confirmar', {
+        method: 'POST',
+        body: JSON.stringify({ codigo: verificationCode }),
+      });
+      updateUser({ emailVerificado: true });
+      setVerificationCode('');
+      Alert.alert('E-mail confirmado', 'Seu endereço de e-mail foi confirmado com sucesso.');
+    } catch (error) {
+      setVerificationError(error instanceof ApiError ? error.message : 'Não foi possível confirmar o e-mail.');
+    } finally {
+      setConfirmingVerification(false);
+    }
+  }
 
   function confirmRevokeOtherSessions() {
     Alert.alert(
@@ -130,7 +179,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     } finally { setDeleting(false); }
   }
 
-  const busy = changingPassword || deleting || revokingSessions;
+  const busy = changingPassword || deleting || revokingSessions || sendingVerification || confirmingVerification;
   const passwordIcon = mostrarSenhas ? 'eye-off-outline' : 'eye-outline';
   const passwordIconLabel = mostrarSenhas ? 'Ocultar senhas' : 'Mostrar senhas';
 
@@ -139,6 +188,33 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
       <BackHeader title="Conta e segurança" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          <Text style={styles.sectionTitle}>Confirmação de e-mail</Text>
+          <Text style={styles.helper}>Confirme seu endereço para recuperar o acesso à conta com segurança.</Text>
+          <Card style={styles.card}>
+            {user?.emailVerificado ? (
+              <InlineNotice tone="success" message={`E-mail confirmado: ${user.email}`} />
+            ) : (
+              <>
+                <InlineNotice tone="warning" message={`O e-mail ${user?.email ?? ''} ainda não foi confirmado.`} />
+                <AppTextInput
+                  label="Código de confirmação"
+                  value={verificationCode}
+                  onChangeText={(value) => { setVerificationCode(value.replace(/\D/g, '').slice(0, 6)); setVerificationError(''); }}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  editable={!busy}
+                  maxLength={6}
+                  helperText="O código expira em 15 minutos. Se ainda não recebeu, solicite abaixo."
+                  containerStyle={styles.verificationField}
+                  required
+                />
+                {verificationError ? <Text accessibilityRole="alert" style={styles.error}>{verificationError}</Text> : null}
+                <AppButton label="Confirmar e-mail" icon="email-check-outline" onPress={() => void confirmEmail()} loading={confirmingVerification} disabled={busy} />
+                <AppButton label="Enviar novo código" icon="email-outline" variant="secondary" onPress={() => void sendVerificationCode()} loading={sendingVerification} disabled={busy} style={styles.resendButton} />
+              </>
+            )}
+          </Card>
+
           <Text style={styles.sectionTitle}>Alterar senha</Text>
           <Text style={styles.helper}>Use uma senha exclusiva que você não utiliza em outros serviços.</Text>
           <Card style={styles.card}>
@@ -185,5 +261,6 @@ const styles = StyleSheet.create({
   helper: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginTop: 4, marginBottom: 12 },
   card: { marginBottom: 22 }, error: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.emberText, marginBottom: 14 },
   sessionCount: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22, color: colors.ink, marginBottom: 14 },
+  verificationField: { marginTop: 16 }, resendButton: { marginTop: 10 },
   firstDeleteField: { marginTop: 16 },
 });

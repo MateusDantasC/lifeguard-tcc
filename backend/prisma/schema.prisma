@@ -58,6 +58,11 @@ enum AggregationPeriod {
   DAY
 }
 
+enum AccountCodeType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 model User {
   id                     String               @id @default(uuid()) @db.Uuid
   name                   String
@@ -70,6 +75,7 @@ model User {
   termsAcceptedAt        DateTime?
   privacyAcceptedAt      DateTime?
   legalDocumentVersion   String?
+  emailVerifiedAt        DateTime?
   sessionVersion         Int                  @default(0)
   notifyHealthAlerts     Boolean              @default(true)
   notifyLinkUpdates      Boolean              @default(true)
@@ -85,7 +91,22 @@ model User {
   notificationRecipients NotificationSent[]   @relation("NotificationRecipient")
   pushTokens             PushToken[]
   sessions               AuthSession[]
+  accountCodes           AccountCode[]
   linkCodes              ElderLinkCode[]
+}
+
+model AccountCode {
+  id        String          @id @default(uuid()) @db.Uuid
+  userId    String          @db.Uuid
+  type      AccountCodeType
+  codeHash  String
+  attempts  Int             @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, usedAt, expiresAt])
 }
 
 model AuthSession {

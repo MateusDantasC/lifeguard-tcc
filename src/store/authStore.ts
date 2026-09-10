@@ -21,6 +21,7 @@ export type AuthUser = {
     id: string;
     nome: string;
     email: string;
+    emailVerificado: boolean;
     telefone?: string | null;
     foto?: string | null;
     genero?: Gender | null;

@@ -67,7 +67,7 @@ export default function CadastroScreen({ navigation }: Props) {
     }
     setLoading(true);
     try {
-      const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']> }>('/auth/cadastro', {
+      const response = await apiRequest<{ token: string; usuario: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>; emailConfirmacaoEnviado: boolean }>('/auth/cadastro', {
         method: 'POST',
         body: JSON.stringify({
           nome: nome.trim(),
@@ -82,7 +82,12 @@ export default function CadastroScreen({ navigation }: Props) {
       });
       setSession(response.token, response.usuario);
       setErro('');
-      Alert.alert('Conta criada', 'Seu cadastro foi concluído com sucesso.');
+      Alert.alert(
+        'Conta criada',
+        response.emailConfirmacaoEnviado
+          ? 'Seu cadastro foi concluído. Enviamos um código para confirmar seu e-mail; você pode informá-lo em Conta e segurança.'
+          : 'Seu cadastro foi concluído. Você poderá solicitar a confirmação do e-mail em Conta e segurança.',
+      );
       navigation.reset({ index: 0, routes: [{ name: tipoConta === 'idoso' ? 'HomeIdoso' : 'HomeCuidador' }] });
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível criar sua conta agora.');

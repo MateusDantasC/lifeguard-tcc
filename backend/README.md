@@ -72,7 +72,15 @@ POSTGRES_PASSWORD=gere-uma-senha-alfanumerica-forte
 JWT_SECRET=gere-uma-chave-aleatoria-com-64-ou-mais-caracteres
 APP_ORIGIN=*
 PUBLIC_HOST=api.seu-dominio.com
+SMTP_HOST=smtp.email.sa-saopaulo-1.oci.oraclecloud.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=usuario-smtp-gerado-pela-oracle
+SMTP_PASSWORD=senha-smtp-gerada-pela-oracle
+EMAIL_FROM=LifeGuard <remetente-aprovado@seu-dominio.com>
 ```
+
+O envio de confirmação de e-mail e recuperação de senha usa SMTP com TLS. Na Oracle Email Delivery, crie um remetente aprovado na mesma região da VM e uma credencial SMTP exclusiva para a aplicação. As credenciais ficam somente no `.env` da VM.
 
 Com as portas 80 e 443 liberadas e o domínio apontado para o IP público da VM, execute:
 

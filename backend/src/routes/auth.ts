@@ -2,12 +2,15 @@ import { compare, hash } from 'bcryptjs';
 import { Router } from 'express';
 import { z } from 'zod';
 import { createAccessToken } from '../auth/token.js';
-import { Gender, UserType } from '../generated/prisma/enums.js';
+import { AccountCodeType, Gender, UserType } from '../generated/prisma/enums.js';
+import { ACCOUNT_CODE_DURATION_MS, ACCOUNT_CODE_MAX_ATTEMPTS, ACCOUNT_CODE_RESEND_MS, accountCodeMatches, createAccountCode, hashAccountCode } from '../domain/account-codes.js';
 import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertLoginAllowed, clearLoginFailures, registerLoginFailure } from '../middleware/login-rate-limit.js';
 import { serializeUser } from '../serializers.js';
+import { assertEmailConfigured, sendEmailVerificationCode, sendPasswordResetCode } from '../services/email.js';
+import { env } from '../config/env.js';
 
 const strongPasswordSchema = z.string()
   .min(8, 'A senha deve ter pelo menos 8 caracteres.')
@@ -44,6 +47,61 @@ async function createTrackedSession(user: { id: string; type: UserType; sessionV
     },
   });
   return createAccessToken(user.id, user.type, user.sessionVersion, session.id);
+}
+
+async function issueAccountCode(user: { id: string; email: string }, type: AccountCodeType) {
+  const now = new Date();
+  const recent = await prisma.accountCode.findFirst({
+    where: {
+      userId: user.id,
+      type,
+      usedAt: null,
+      createdAt: { gt: new Date(now.getTime() - ACCOUNT_CODE_RESEND_MS) },
+    },
+  });
+  if (recent) return;
+
+  const code = createAccountCode();
+  const record = await prisma.$transaction(async (tx) => {
+    await tx.accountCode.updateMany({
+      where: { userId: user.id, type, usedAt: null },
+      data: { usedAt: now },
+    });
+    return tx.accountCode.create({
+      data: {
+        userId: user.id,
+        type,
+        codeHash: hashAccountCode(code, env.JWT_SECRET),
+        expiresAt: new Date(now.getTime() + ACCOUNT_CODE_DURATION_MS),
+      },
+    });
+  });
+
+  try {
+    if (type === AccountCodeType.EMAIL_VERIFICATION) await sendEmailVerificationCode(user.email, code);
+    else await sendPasswordResetCode(user.email, code);
+  } catch (error) {
+    await prisma.accountCode.update({ where: { id: record.id }, data: { usedAt: new Date() } }).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function findValidAccountCode(userId: string, type: AccountCodeType, code: string) {
+  const record = await prisma.accountCode.findFirst({
+    where: { userId, type, usedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!record || record.attempts >= ACCOUNT_CODE_MAX_ATTEMPTS || !accountCodeMatches(code, record.codeHash, env.JWT_SECRET)) {
+    if (record) {
+      const attempts = record.attempts + 1;
+      await prisma.accountCode.update({
+        where: { id: record.id },
+        data: { attempts, ...(attempts >= ACCOUNT_CODE_MAX_ATTEMPTS ? { usedAt: new Date() } : {}) },
+      });
+    }
+    throw new HttpError(400, 'Código inválido ou expirado. Solicite um novo código.', 'INVALID_OR_EXPIRED_CODE');
+  }
+  return record;
 }
 
 const updateProfileSchema = z.object({
@@ -106,9 +164,14 @@ authRouter.post('/cadastro', async (req, res) => {
     include: { elderProfile: true },
   });
 
+  const emailConfirmacaoEnviado = await issueAccountCode(user, AccountCodeType.EMAIL_VERIFICATION)
+    .then(() => true)
+    .catch(() => false);
+
   res.status(201).json({
     token: await createTrackedSession(user),
     usuario: serializeUser(user, user.elderProfile),
+    emailConfirmacaoEnviado,
   });
 });
 
@@ -148,6 +211,15 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   }
 
   const profile = input.perfilIdoso;
+  const currentEmail = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { email: true } });
+  if (!currentEmail) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  const emailChanged = currentEmail.email !== input.email;
+  if (emailChanged) {
+    await prisma.accountCode.updateMany({
+      where: { userId: req.auth!.userId, type: AccountCodeType.EMAIL_VERIFICATION, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+  }
   const profileData = profile ? {
     birthDate: profile.dataNascimento ? new Date(`${profile.dataNascimento}T12:00:00.000Z`) : null,
     bloodType: profile.tipoSanguineo || null,
@@ -164,6 +236,7 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
     data: {
       name: input.nome,
       email: input.email,
+      ...(emailChanged ? { emailVerifiedAt: null } : {}),
       phone: input.telefone || null,
       ...(input.genero !== undefined ? { gender: input.genero ? genderMap[input.genero] : null } : {}),
       ...(input.foto !== undefined ? { profilePhoto: input.foto } : {}),
@@ -172,6 +245,75 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
     include: { elderProfile: true },
   });
   res.json({ usuario: serializeUser(user, user.elderProfile) });
+});
+
+authRouter.post('/email/confirmacao/solicitar', requireAuth, async (req, res) => {
+  assertEmailConfigured();
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    select: { id: true, email: true, emailVerifiedAt: true },
+  });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  if (!user.emailVerifiedAt) await issueAccountCode(user, AccountCodeType.EMAIL_VERIFICATION);
+  res.json({
+    emailVerificado: Boolean(user.emailVerifiedAt),
+    mensagem: user.emailVerifiedAt ? 'Seu e-mail já está confirmado.' : 'Enviamos um código para o seu e-mail.',
+  });
+});
+
+authRouter.get('/email/status', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    select: { emailVerifiedAt: true },
+  });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  res.json({ emailVerificado: Boolean(user.emailVerifiedAt) });
+});
+
+authRouter.post('/email/confirmacao/confirmar', requireAuth, async (req, res) => {
+  const input = z.object({ codigo: z.string().trim().regex(/^\d{6}$/, 'Informe o código de 6 dígitos.') }).parse(req.body);
+  const user = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { emailVerifiedAt: true } });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  if (user.emailVerifiedAt) {
+    res.json({ emailVerificado: true, mensagem: 'Seu e-mail já está confirmado.' });
+    return;
+  }
+  const record = await findValidAccountCode(req.auth!.userId, AccountCodeType.EMAIL_VERIFICATION, input.codigo);
+  await prisma.$transaction([
+    prisma.accountCode.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    prisma.user.update({ where: { id: req.auth!.userId }, data: { emailVerifiedAt: new Date() } }),
+  ]);
+  res.json({ emailVerificado: true, mensagem: 'E-mail confirmado com sucesso.' });
+});
+
+authRouter.post('/senha/recuperacao/solicitar', async (req, res) => {
+  const input = z.object({ email: z.email().transform((email) => email.toLowerCase()) }).parse(req.body);
+  assertEmailConfigured();
+  const user = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true, email: true } });
+  if (user) await issueAccountCode(user, AccountCodeType.PASSWORD_RESET);
+  res.json({ mensagem: 'Se o e-mail estiver cadastrado, enviaremos um código de recuperação.' });
+});
+
+authRouter.post('/senha/recuperacao/confirmar', async (req, res) => {
+  const input = z.object({
+    email: z.email().transform((email) => email.toLowerCase()),
+    codigo: z.string().trim().regex(/^\d{6}$/, 'Informe o código de 6 dígitos.'),
+    novaSenha: strongPasswordSchema,
+  }).parse(req.body);
+  const user = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+  if (!user) throw new HttpError(400, 'Código inválido ou expirado. Solicite um novo código.', 'INVALID_OR_EXPIRED_CODE');
+  const record = await findValidAccountCode(user.id, AccountCodeType.PASSWORD_RESET, input.codigo);
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.accountCode.update({ where: { id: record.id }, data: { usedAt: now } }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hash(input.novaSenha, 12), sessionVersion: { increment: 1 } },
+    }),
+    prisma.authSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: now } }),
+    prisma.pushToken.updateMany({ where: { userId: user.id, active: true }, data: { active: false } }),
+  ]);
+  res.json({ mensagem: 'Senha alterada com sucesso. Entre novamente com a nova senha.' });
 });
 
 authRouter.patch('/senha', requireAuth, async (req, res) => {

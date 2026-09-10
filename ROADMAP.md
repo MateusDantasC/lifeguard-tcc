@@ -14,7 +14,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 - Fluxo para exportar ou solicitar os próprios dados, alinhado à LGPD.
 - [Concluído] Sessões revogáveis e opção de desconectar os outros aparelhos.
-- Recuperação de senha e confirmação de e-mail, quando o serviço de e-mail for definido.
+- [Em implementação] Recuperação de senha e confirmação de e-mail com códigos temporários enviados pela Oracle Email Delivery.
 
 ## 2. Experiência e acessibilidade
 
