@@ -11,6 +11,39 @@ const tokenSchema = z.string().trim().max(300).regex(/^(ExponentPushToken|ExpoPu
 export const notificationsRouter = Router();
 notificationsRouter.use(requireAuth);
 
+function serializePreferences(preferences: { notifyHealthAlerts: boolean; notifyLinkUpdates: boolean }) {
+  return {
+    alertasSaude: preferences.notifyHealthAlerts,
+    atualizacoesVinculo: preferences.notifyLinkUpdates,
+  };
+}
+
+notificationsRouter.get('/preferencias', async (req, res) => {
+  const preferences = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    select: { notifyHealthAlerts: true, notifyLinkUpdates: true },
+  });
+  if (!preferences) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+  res.json({ preferencias: serializePreferences(preferences) });
+});
+
+notificationsRouter.patch('/preferencias', async (req, res) => {
+  const input = z.object({
+    alertasSaude: z.boolean().optional(),
+    atualizacoesVinculo: z.boolean().optional(),
+  }).refine((value) => Object.keys(value).length > 0, 'Informe pelo menos uma preferência.').parse(req.body);
+
+  const preferences = await prisma.user.update({
+    where: { id: req.auth!.userId },
+    data: {
+      ...(input.alertasSaude !== undefined ? { notifyHealthAlerts: input.alertasSaude } : {}),
+      ...(input.atualizacoesVinculo !== undefined ? { notifyLinkUpdates: input.atualizacoesVinculo } : {}),
+    },
+    select: { notifyHealthAlerts: true, notifyLinkUpdates: true },
+  });
+  res.json({ preferencias: serializePreferences(preferences) });
+});
+
 notificationsRouter.post('/token', async (req, res) => {
   const input = z.object({
     token: tokenSchema,

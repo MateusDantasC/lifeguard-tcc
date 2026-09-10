@@ -8,6 +8,11 @@ import { apiRequest } from './api';
 const PUSH_TOKEN_KEY = 'lifeguard.push-token.v1';
 const ALERT_CHANNEL = 'alertas';
 
+export type NotificationPreferences = {
+  alertasSaude: boolean;
+  atualizacoesVinculo: boolean;
+};
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -70,4 +75,15 @@ export async function unregisterPushNotifications() {
 
 export async function sendTestNotification() {
   return apiRequest<{ enviadas: number; destino: 'cuidadores' | 'este_aparelho' }>('/notificacoes/teste', { method: 'POST' });
+}
+
+export async function getNotificationPreferences() {
+  return apiRequest<{ preferencias: NotificationPreferences }>('/notificacoes/preferencias');
+}
+
+export async function updateNotificationPreferences(preferences: Partial<NotificationPreferences>) {
+  return apiRequest<{ preferencias: NotificationPreferences }>('/notificacoes/preferencias', {
+    method: 'PATCH',
+    body: JSON.stringify(preferences),
+  });
 }

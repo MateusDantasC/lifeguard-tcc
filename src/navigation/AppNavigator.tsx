@@ -1,5 +1,7 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { useCallback, useEffect, useRef } from 'react';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Notifications from 'expo-notifications';
 import type { RootStackParamList } from './types';
 import LoginScreen from '../screens/LoginScreen';
 import CadastroScreen from '../screens/CadastroScreen';
@@ -25,11 +27,61 @@ import { colors } from '../theme/theme';
 import { useAuthStore } from '../store/authStore';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function AppNavigator() {
   const user = useAuthStore((state) => state.user);
+  const pendingResponse = useRef<Notifications.NotificationResponse | null>(null);
+  const lastHandledId = useRef<string | null>(null);
+
+  const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
+    if (!navigationRef.isReady() || !user) {
+      pendingResponse.current = response;
+      return;
+    }
+
+    const notificationId = response.notification.request.identifier;
+    if (lastHandledId.current === notificationId) return;
+    const data = response.notification.request.content.data;
+    const type = typeof data.tipo === 'string' ? data.tipo : '';
+    let handled = false;
+
+    if (user.tipo === 'cuidador' && (type === 'alerta' || type === 'teste_alerta')) {
+      navigationRef.navigate('Alertas');
+      handled = true;
+    } else if (user.tipo === 'idoso' && type === 'novo_vinculo') {
+      navigationRef.navigate('Cuidadores');
+      handled = true;
+    } else if (user.tipo === 'idoso' && type === 'alerta') {
+      navigationRef.navigate('HomeIdoso');
+      handled = true;
+    } else if (type === 'teste') {
+      navigationRef.navigate('Perfil');
+      handled = true;
+    }
+
+    if (handled) {
+      lastHandledId.current = notificationId;
+      pendingResponse.current = null;
+      void Notifications.clearLastNotificationResponseAsync();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleNotificationResponse(response);
+    });
+    return () => subscription.remove();
+  }, [handleNotificationResponse]);
+
+  const handleNavigationReady = useCallback(() => {
+    const response = pendingResponse.current;
+    if (response) handleNotificationResponse(response);
+  }, [handleNotificationResponse]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>
       <Stack.Navigator
         initialRouteName={user?.tipo === 'idoso' ? 'HomeIdoso' : user?.tipo === 'cuidador' ? 'HomeCuidador' : 'Login'}
         screenOptions={{

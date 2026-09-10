@@ -6,21 +6,43 @@ type PushPayload = {
   data?: Record<string, string>;
 };
 
+export type NotificationCategory = 'health_alert' | 'link_update' | 'system';
+
 type ExpoTicket = { status: 'ok'; id: string } | { status: 'error'; message: string; details?: { error?: string } };
 
-export async function sendPushToUsers(userIds: string[], payload: PushPayload, alertId?: string) {
+export function acceptsNotificationCategory(
+  preferences: { notifyHealthAlerts: boolean; notifyLinkUpdates: boolean },
+  category: NotificationCategory,
+) {
+  if (category === 'health_alert') return preferences.notifyHealthAlerts;
+  if (category === 'link_update') return preferences.notifyLinkUpdates;
+  return true;
+}
+
+export async function sendPushToUsers(
+  userIds: string[],
+  payload: PushPayload,
+  alertId?: string,
+  category: NotificationCategory = 'system',
+) {
   const uniqueUserIds = [...new Set(userIds)];
   if (uniqueUserIds.length === 0) return 0;
 
   const tokens = await prisma.pushToken.findMany({
     where: { userId: { in: uniqueUserIds }, active: true },
-    select: { id: true, userId: true, token: true },
+    select: {
+      id: true,
+      userId: true,
+      token: true,
+      user: { select: { notifyHealthAlerts: true, notifyLinkUpdates: true } },
+    },
   });
-  if (tokens.length === 0) return 0;
+  const eligibleTokens = tokens.filter(({ user }) => acceptsNotificationCategory(user, category));
+  if (eligibleTokens.length === 0) return 0;
 
   let sent = 0;
-  for (let offset = 0; offset < tokens.length; offset += 100) {
-    const chunk = tokens.slice(offset, offset + 100);
+  for (let offset = 0; offset < eligibleTokens.length; offset += 100) {
+    const chunk = eligibleTokens.slice(offset, offset + 100);
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip, deflate', 'Content-Type': 'application/json' },

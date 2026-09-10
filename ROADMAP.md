@@ -18,8 +18,8 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 ## 2. Experiência e acessibilidade
 
-- Abrir a tela correta ao tocar em uma notificação.
-- Preferências de notificação por categoria.
+- [Concluído] Abrir a tela correta ao tocar em uma notificação.
+- [Concluído] Preferências de notificação por categoria, respeitadas pelo servidor.
 - Cache seguro dos últimos dados para consulta sem conexão.
 - Revisão completa de estados vazios, carregamento, erro e tentativa novamente.
 - Revisão de acessibilidade: leitor de tela, contraste, tamanhos de toque e textos ampliados.

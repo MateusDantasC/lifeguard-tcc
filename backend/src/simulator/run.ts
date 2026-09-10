@@ -71,7 +71,7 @@ async function simulate() {
         title: 'Alerta de saúde',
         body: alert.message,
         data: { tipo: 'alerta', alertaId: alert.id, pacienteId: device.elderId },
-      }, alert.id);
+      }, alert.id, 'health_alert');
     }
   }
 

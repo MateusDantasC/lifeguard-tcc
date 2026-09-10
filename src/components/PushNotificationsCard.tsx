@@ -4,19 +4,55 @@ import { PermissionStatus } from 'expo-notifications';
 import Card from './Card';
 import AppButton from './AppButton';
 import { colors, fonts } from '../theme/theme';
-import { getNotificationPermission, registerForPushNotifications, sendTestNotification } from '../services/notifications';
+import {
+  getNotificationPermission,
+  getNotificationPreferences,
+  registerForPushNotifications,
+  sendTestNotification,
+  updateNotificationPreferences,
+  type NotificationPreferences,
+} from '../services/notifications';
 import { ApiError } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import OptionCheckbox from './OptionCheckbox';
+
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  alertasSaude: true,
+  atualizacoesVinculo: true,
+};
 
 export default function PushNotificationsCard() {
   const userType = useAuthStore((state) => state.user?.tipo);
   const [status, setStatus] = useState<PermissionStatus | 'unknown'>('unknown');
   const [loadingAction, setLoadingAction] = useState<'enable' | 'test' | null>(null);
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     void getNotificationPermission().then((permission) => setStatus(permission.status)).catch(() => setStatus('unknown'));
+    void getNotificationPreferences()
+      .then(({ preferencias }) => setPreferences(preferencias))
+      .catch((requestError) => setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar as preferências.'))
+      .finally(() => setLoadingPreferences(false));
   }, []);
+
+  async function changePreference(key: keyof NotificationPreferences, checked: boolean) {
+    const previous = preferences;
+    const next = { ...preferences, [key]: checked };
+    setPreferences(next);
+    setLoadingPreferences(true);
+    setError('');
+    try {
+      const response = await updateNotificationPreferences({ [key]: checked });
+      setPreferences(response.preferencias);
+    } catch (requestError) {
+      setPreferences(previous);
+      setError(requestError instanceof Error ? requestError.message : 'Não foi possível salvar a preferência.');
+    } finally {
+      setLoadingPreferences(false);
+    }
+  }
 
   async function enable() {
     setLoadingAction('enable');
@@ -66,6 +102,22 @@ export default function PushNotificationsCard() {
       {enabled && !isPatient ? <AppButton label="Testar neste aparelho" icon="bell-ring-outline" variant="secondary" onPress={() => void test()} loading={loadingAction === 'test'} disabled={loadingAction !== null} /> : null}
       {isPatient ? <AppButton label="Enviar teste aos cuidadores" icon="bell-ring-outline" variant="secondary" style={!enabled ? styles.secondaryAction : undefined} onPress={() => void test()} loading={loadingAction === 'test'} disabled={loadingAction !== null} /> : null}
       {status === 'denied' ? <AppButton label="Abrir configurações do aparelho" variant="text" onPress={() => void Linking.openSettings()} disabled={loadingAction !== null} /> : null}
+      <View style={styles.preferences}>
+        <Text style={styles.preferencesTitle}>Quero receber</Text>
+        <OptionCheckbox
+          checked={preferences.alertasSaude}
+          label={isPatient ? 'Alertas sobre meus sinais vitais' : 'Alertas de saúde dos pacientes'}
+          onChange={(checked) => void changePreference('alertasSaude', checked)}
+          disabled={loadingPreferences}
+        />
+        <OptionCheckbox
+          checked={preferences.atualizacoesVinculo}
+          label="Avisos sobre vínculos de cuidado"
+          onChange={(checked) => void changePreference('atualizacoesVinculo', checked)}
+          disabled={loadingPreferences}
+        />
+        <Text style={styles.preferencesHelper}>As escolhas valem para todos os seus aparelhos.</Text>
+      </View>
     </Card>
   );
 }
@@ -77,4 +129,7 @@ const styles = StyleSheet.create({
   description: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginTop: 3 },
   error: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.emberText, marginBottom: 12 },
   secondaryAction: { marginTop: 10 },
+  preferences: { marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border },
+  preferencesTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink, marginBottom: 10 },
+  preferencesHelper: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.textSecondary },
 });

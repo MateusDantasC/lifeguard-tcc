@@ -1,0 +1,3 @@
+ALTER TABLE "User"
+ADD COLUMN "notifyHealthAlerts" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN "notifyLinkUpdates" BOOLEAN NOT NULL DEFAULT true;

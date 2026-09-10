@@ -70,6 +70,8 @@ model User {
   termsAcceptedAt        DateTime?
   privacyAcceptedAt      DateTime?
   legalDocumentVersion   String?
+  notifyHealthAlerts     Boolean              @default(true)
+  notifyLinkUpdates      Boolean              @default(true)
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
   elderProfile           ElderProfile?

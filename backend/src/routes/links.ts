@@ -105,7 +105,7 @@ linksRouter.post('/', async (req, res) => {
     title: 'Novo cuidador vinculado',
     body: 'Um cuidador usou seu código e agora faz parte da sua rede de cuidado.',
     data: { tipo: 'novo_vinculo' },
-  }).catch((error) => console.error('Falha ao enviar notificação de vínculo:', error));
+  }, undefined, 'link_update').catch((error) => console.error('Falha ao enviar notificação de vínculo:', error));
 });
 
 linksRouter.delete('/:vinculoId', async (req, res) => {
