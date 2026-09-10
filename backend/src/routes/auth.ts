@@ -8,7 +8,7 @@ import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertLoginAllowed, clearLoginFailures, registerLoginFailure } from '../middleware/login-rate-limit.js';
-import { serializeUser } from '../serializers.js';
+import { serializeElderProfile, serializeGender, serializeUser } from '../serializers.js';
 import { assertEmailConfigured, sendEmailVerificationCode, sendPasswordResetCode } from '../services/email.js';
 import { env } from '../config/env.js';
 
@@ -196,6 +196,196 @@ authRouter.get('/me', requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.auth!.userId }, include: { elderProfile: true } });
   if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
   res.json({ usuario: serializeUser(user, user.elderProfile) });
+});
+
+authRouter.get('/me/exportacao', requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      type: true,
+      profilePhoto: true,
+      gender: true,
+      termsAcceptedAt: true,
+      privacyAcceptedAt: true,
+      legalDocumentVersion: true,
+      emailVerifiedAt: true,
+      notifyHealthAlerts: true,
+      notifyLinkUpdates: true,
+      createdAt: true,
+      updatedAt: true,
+      elderProfile: true,
+      alertLimits: {
+        select: {
+          heartRateMinimum: true,
+          heartRateMaximum: true,
+          temperatureMinimum: true,
+          temperatureMaximum: true,
+          updatedAt: true,
+        },
+      },
+      caregiverLinks: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          elder: { select: { id: true, name: true } },
+        },
+      },
+      elderLinks: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          caregiver: { select: { id: true, name: true } },
+        },
+      },
+      devices: {
+        select: {
+          id: true,
+          hardwareCode: true,
+          nickname: true,
+          active: true,
+          pairedAt: true,
+          lastSeenAt: true,
+          readings: {
+            orderBy: { timestamp: 'asc' },
+            select: {
+              id: true,
+              heartRate: true,
+              temperature: true,
+              timestamp: true,
+              source: true,
+              signalQuality: true,
+              contactDetected: true,
+              valid: true,
+              invalidReason: true,
+            },
+          },
+          aggregates: {
+            orderBy: { periodStart: 'asc' },
+            select: {
+              id: true,
+              period: true,
+              periodStart: true,
+              sampleCount: true,
+              heartRateAverage: true,
+              heartRateMinimum: true,
+              heartRateMaximum: true,
+              temperatureAverage: true,
+              temperatureMinimum: true,
+              temperatureMaximum: true,
+            },
+          },
+        },
+      },
+      alerts: {
+        orderBy: { timestamp: 'asc' },
+        select: {
+          id: true,
+          type: true,
+          measuredValue: true,
+          message: true,
+          timestamp: true,
+          status: true,
+          resolvedAt: true,
+        },
+      },
+      notificationRecipients: {
+        orderBy: { sentAt: 'asc' },
+        select: {
+          id: true,
+          sentAt: true,
+          readAt: true,
+          alert: {
+            select: {
+              id: true,
+              type: true,
+              message: true,
+              timestamp: true,
+              status: true,
+            },
+          },
+        },
+      },
+      sessions: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          createdAt: true,
+          lastSeenAt: true,
+          expiresAt: true,
+          revokedAt: true,
+        },
+      },
+    },
+  });
+  if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
+
+  res.json({
+    formato: 'lifeguard-exportacao-v1',
+    geradoEm: new Date().toISOString(),
+    observacao: 'Senhas, códigos temporários, tokens de acesso e tokens de notificação não fazem parte desta exportação por segurança.',
+    conta: {
+      id: user.id,
+      nome: user.name,
+      email: user.email,
+      emailConfirmadoEm: user.emailVerifiedAt?.toISOString() ?? null,
+      telefone: user.phone,
+      genero: serializeGender(user.gender),
+      tipo: user.type === UserType.ELDER ? 'paciente' : 'cuidador',
+      fotoPerfilArmazenada: Boolean(user.profilePhoto),
+      criadaEm: user.createdAt.toISOString(),
+      atualizadaEm: user.updatedAt.toISOString(),
+    },
+    consentimentos: {
+      termosDeUsoAceitosEm: user.termsAcceptedAt?.toISOString() ?? null,
+      politicaDePrivacidadeAceitaEm: user.privacyAcceptedAt?.toISOString() ?? null,
+      versaoDosDocumentos: user.legalDocumentVersion,
+    },
+    preferencias: {
+      alertasDeSaude: user.notifyHealthAlerts,
+      atualizacoesDeVinculo: user.notifyLinkUpdates,
+    },
+    perfilPaciente: serializeElderProfile(user.elderProfile),
+    limitesDeAlerta: user.alertLimits,
+    vinculosComoCuidador: user.caregiverLinks.map((link) => ({
+      id: link.id,
+      status: link.status,
+      paciente: link.elder,
+      criadoEm: link.createdAt.toISOString(),
+      atualizadoEm: link.updatedAt.toISOString(),
+    })),
+    vinculosComoPaciente: user.elderLinks.map((link) => ({
+      id: link.id,
+      status: link.status,
+      cuidador: link.caregiver,
+      criadoEm: link.createdAt.toISOString(),
+      atualizadoEm: link.updatedAt.toISOString(),
+    })),
+    dispositivos: user.devices.map((device) => ({
+      ...device,
+      pairedAt: device.pairedAt.toISOString(),
+      lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
+      readings: device.readings.map((reading) => ({
+        ...reading,
+        id: reading.id.toString(),
+        timestamp: reading.timestamp.toISOString(),
+      })),
+      aggregates: device.aggregates.map((aggregate) => ({
+        ...aggregate,
+        id: aggregate.id.toString(),
+        periodStart: aggregate.periodStart.toISOString(),
+      })),
+    })),
+    alertas: user.alerts,
+    notificacoesRecebidas: user.notificationRecipients,
+    sessoes: user.sessions,
+  });
 });
 
 authRouter.patch('/me', requireAuth, async (req, res) => {

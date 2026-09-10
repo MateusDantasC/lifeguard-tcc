@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,6 +44,8 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   const [sendingVerification, setSendingVerification] = useState(false);
   const [confirmingVerification, setConfirmingVerification] = useState(false);
   const [verificationError, setVerificationError] = useState('');
+  const [exportingData, setExportingData] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const loadSessionCount = useCallback(async () => {
     if (!user) return;
@@ -153,6 +155,22 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     } finally { setChangingPassword(false); }
   }
 
+  async function exportAccountData() {
+    setExportingData(true);
+    setExportError('');
+    try {
+      const report = await apiRequest<Record<string, unknown>>('/auth/me/exportacao');
+      await Share.share({
+        title: 'Meus dados do LifeGuard',
+        message: JSON.stringify(report, null, 2),
+      });
+    } catch (error) {
+      setExportError(error instanceof ApiError ? error.message : 'Não foi possível gerar ou compartilhar seus dados.');
+    } finally {
+      setExportingData(false);
+    }
+  }
+
   function confirmDelete() {
     if (!senhaExclusao) { setDeleteError('Informe sua senha atual.'); return; }
     if (confirmacaoExclusao.trim().toUpperCase() !== 'EXCLUIR') { setDeleteError('Digite EXCLUIR para confirmar.'); return; }
@@ -179,7 +197,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
     } finally { setDeleting(false); }
   }
 
-  const busy = changingPassword || deleting || revokingSessions || sendingVerification || confirmingVerification;
+  const busy = changingPassword || deleting || revokingSessions || sendingVerification || confirmingVerification || exportingData;
   const passwordIcon = mostrarSenhas ? 'eye-off-outline' : 'eye-outline';
   const passwordIconLabel = mostrarSenhas ? 'Ocultar senhas' : 'Mostrar senhas';
 
@@ -239,6 +257,14 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
             <AppButton label="Desconectar outros dispositivos" icon="logout-variant" variant="secondary" onPress={confirmRevokeOtherSessions} loading={revokingSessions} disabled={busy || loadingSessions || sessionCount === null || sessionCount <= 1} />
           </Card>
 
+          <Text style={styles.sectionTitle}>Privacidade e seus dados</Text>
+          <Text style={styles.helper}>Gere uma cópia das informações associadas à sua conta para salvar ou compartilhar pelo celular.</Text>
+          <Card style={styles.card}>
+            <InlineNotice message="Por segurança, o relatório nunca inclui senhas, códigos temporários ou tokens de acesso e notificação." />
+            {exportError ? <Text accessibilityRole="alert" style={styles.exportError}>{exportError}</Text> : null}
+            <AppButton label="Exportar meus dados" icon="download-outline" variant="secondary" onPress={() => void exportAccountData()} loading={exportingData} disabled={busy} style={styles.exportButton} />
+          </Card>
+
           <Text style={[styles.sectionTitle, styles.dangerTitle]}>Excluir conta</Text>
           <Text style={styles.helper}>Esta ação remove definitivamente o perfil e os dados relacionados.</Text>
           <Card style={styles.card}>
@@ -262,5 +288,6 @@ const styles = StyleSheet.create({
   card: { marginBottom: 22 }, error: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.emberText, marginBottom: 14 },
   sessionCount: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 22, color: colors.ink, marginBottom: 14 },
   verificationField: { marginTop: 16 }, resendButton: { marginTop: 10 },
+  exportButton: { marginTop: 16 }, exportError: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.emberText, marginTop: 14 },
   firstDeleteField: { marginTop: 16 },
 });

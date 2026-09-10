@@ -12,7 +12,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 ## 1. Conta, privacidade e segurança
 
-- Fluxo para exportar ou solicitar os próprios dados, alinhado à LGPD.
+- [Concluído] Exportação dos próprios dados pelo menu nativo do celular, sem incluir credenciais ou tokens.
 - [Concluído] Sessões revogáveis e opção de desconectar os outros aparelhos.
 - [Concluído] Recuperação de senha e confirmação de e-mail com códigos temporários enviados pela Oracle Email Delivery.
 
