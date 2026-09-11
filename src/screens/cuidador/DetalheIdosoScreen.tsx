@@ -13,7 +13,7 @@ import Card from '../../components/Card';
 import { useMonitoringStore } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchElder } from '../../services/monitoring';
-import { apiRequest, ApiError } from '../../services/api';
+import { apiRequest, ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import { formatPhone } from '../../utils/phone';
 import { formatGender } from '../../components/GenderSelector';
@@ -40,7 +40,9 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
       const result = await fetchElder(idosoId);
       upsertElder(result.elder);
       if (result.limits) setLimits(idosoId, result.limits);
-      setErro('');
+      setErro(result.cache.fromCache
+        ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(result.cache.savedAt!)}.`
+        : '');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
     } finally {

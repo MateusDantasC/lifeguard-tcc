@@ -12,7 +12,7 @@ import SectionHeader from '../../components/SectionHeader';
 import { useMonitoringStore } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchCaregiverDashboard } from '../../services/monitoring';
-import { ApiError } from '../../services/api';
+import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import EmptyState from '../../components/EmptyState';
 
@@ -33,7 +33,9 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
       const dashboard = await fetchCaregiverDashboard();
       setElders(dashboard.elders);
       setAlerts(dashboard.alerts);
-      setErro('');
+      setErro(dashboard.cache.fromCache
+        ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(dashboard.cache.savedAt!)}.`
+        : '');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
     } finally {

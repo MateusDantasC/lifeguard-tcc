@@ -14,7 +14,7 @@ import SectionHeader from '../../components/SectionHeader';
 import { useMonitoringStore } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchElder } from '../../services/monitoring';
-import { ApiError } from '../../services/api';
+import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
@@ -34,7 +34,9 @@ export default function HomeIdosoScreen({ navigation }: Props) {
       const result = await fetchElder(user.id);
       upsertElder(result.elder);
       if (result.limits) setLimits(user.id, result.limits);
-      setErro('');
+      setErro(result.cache.fromCache
+        ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(result.cache.savedAt!)}.`
+        : '');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
     } finally {

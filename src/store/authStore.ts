@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { setApiToken, setUnauthorizedHandler } from '../services/api';
 import * as SecureStore from 'expo-secure-store';
+import { clearSecureCaches } from '../services/secureCache';
 
 const SESSION_KEY = 'lifeguard.session.v1';
 
@@ -87,9 +88,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (token && user && get().rememberSession) void persistSession(token, user).catch(() => undefined);
   },
   logout: () => {
+    const userId = get().user?.id;
     setApiToken(null);
     set({ user: null, token: null, rememberSession: false });
     void SecureStore.deleteItemAsync(SESSION_KEY).catch(() => undefined);
+    if (userId) void clearSecureCaches(userId);
   },
 }));
 

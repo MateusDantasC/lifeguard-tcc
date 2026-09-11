@@ -1,6 +1,8 @@
-import { apiRequest, formatDateTime, formatRelativeTime } from './api';
+import { apiRequest, ApiError, formatDateTime, formatRelativeTime } from './api';
 import type { AlertLimits, Caregiver, Elder, MonitoringAlert } from '../store/monitoringStore';
 import type { ElderProfile, Gender } from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
+import { readSecureCache, writeSecureCache } from './secureCache';
 
 type ApiReading = {
   id: string;
@@ -37,6 +39,11 @@ type ApiLimits = {
 
 export type Reading = ApiReading;
 
+type CacheMetadata = {
+  fromCache: boolean;
+  savedAt: string | null;
+};
+
 export type PatientChange = {
   id: string;
   categoria: 'perfil' | 'limites';
@@ -72,26 +79,60 @@ export function mapLimits(limits: ApiLimits): AlertLimits {
   };
 }
 
-export async function fetchCaregiverDashboard() {
-  const [eldersResponse, alertsResponse] = await Promise.all([
-    apiRequest<{ idosos: ApiElder[] }>('/idosos'),
-    apiRequest<{ alertas: Array<Omit<MonitoringAlert, 'horario'> & { horario: string; valor: number | null }> }>('/alertas'),
-  ]);
-  return {
-    elders: eldersResponse.idosos.map(mapElder),
-    alerts: alertsResponse.alertas
-      .filter((alert): alert is typeof alert & { valor: number; tipo: 'batimento' | 'temperatura' } =>
-        alert.valor !== null && (alert.tipo === 'batimento' || alert.tipo === 'temperatura'))
-      .map((alert) => ({ ...alert, horario: formatDateTime(alert.horario) })),
-  };
+export async function fetchCaregiverDashboard(): Promise<{ elders: Elder[]; alerts: MonitoringAlert[]; cache: CacheMetadata }> {
+  const auth = useAuthStore.getState();
+  const ownerId = auth.rememberSession ? auth.user?.id : undefined;
+  const scope = 'caregiver-dashboard';
+  try {
+    const [eldersResponse, alertsResponse] = await Promise.all([
+      apiRequest<{ idosos: ApiElder[] }>('/idosos'),
+      apiRequest<{ alertas: Array<Omit<MonitoringAlert, 'horario'> & { horario: string; valor: number | null }> }>('/alertas'),
+    ]);
+    const dashboard = {
+      elders: eldersResponse.idosos.map(mapElder),
+      alerts: alertsResponse.alertas
+        .filter((alert): alert is typeof alert & { valor: number; tipo: 'batimento' | 'temperatura' } =>
+          alert.valor !== null && (alert.tipo === 'batimento' || alert.tipo === 'temperatura'))
+        .map((alert) => ({ ...alert, horario: formatDateTime(alert.horario) })),
+    };
+    if (ownerId) {
+      const cacheable = {
+        elders: dashboard.elders.map((elder) => ({ ...elder, foto: null })),
+        alerts: dashboard.alerts.slice(0, 50),
+      };
+      void writeSecureCache(ownerId, scope, cacheable).catch(() => undefined);
+    }
+    return { ...dashboard, cache: { fromCache: false, savedAt: null } };
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status || !ownerId) throw error;
+    const cached = await readSecureCache<{ elders: Elder[]; alerts: MonitoringAlert[] }>(ownerId, scope);
+    if (!cached) throw error;
+    return { ...cached.data, cache: { fromCache: true, savedAt: cached.savedAt } };
+  }
 }
 
-export async function fetchElder(elderId: string) {
-  const response = await apiRequest<{ idoso: ApiElder }>(`/idosos/${elderId}`);
-  return {
-    elder: mapElder(response.idoso),
-    limits: response.idoso.limites ? mapLimits(response.idoso.limites) : null,
-  };
+export async function fetchElder(elderId: string): Promise<{ elder: Elder; limits: AlertLimits | null; cache: CacheMetadata }> {
+  const auth = useAuthStore.getState();
+  const ownerId = auth.rememberSession ? auth.user?.id : undefined;
+  const scope = `patient-${elderId}`;
+  try {
+    const response = await apiRequest<{ idoso: ApiElder }>(`/idosos/${elderId}`);
+    const result = {
+      elder: mapElder(response.idoso),
+      limits: response.idoso.limites ? mapLimits(response.idoso.limites) : null,
+    };
+    if (ownerId) void writeSecureCache(ownerId, scope, { ...result, elder: { ...result.elder, foto: null } }).catch(() => undefined);
+    return { ...result, cache: { fromCache: false, savedAt: null } };
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status || !ownerId) throw error;
+    const cached = await readSecureCache<{ elder: Elder; limits: AlertLimits | null }>(ownerId, scope);
+    if (!cached) throw error;
+    return {
+      ...cached.data,
+      elder: { ...cached.data.elder, ultimaAtualizacao: `em ${formatDateTime(cached.savedAt)}` },
+      cache: { fromCache: true, savedAt: cached.savedAt },
+    };
+  }
 }
 
 export async function fetchLimits(elderId: string) {

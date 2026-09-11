@@ -11,7 +11,7 @@ import SegmentedToggle from '../../components/SegmentedToggle';
 import EmptyState from '../../components/EmptyState';
 import { useMonitoringStore, type AlertStatus } from '../../store/monitoringStore';
 import { useFocusEffect } from '@react-navigation/native';
-import { apiRequest, ApiError } from '../../services/api';
+import { apiRequest, ApiError, formatDateTime } from '../../services/api';
 import { fetchCaregiverDashboard } from '../../services/monitoring';
 import InlineNotice from '../../components/InlineNotice';
 
@@ -28,7 +28,12 @@ export default function AlertasScreen({ navigation }: Props) {
 
   useFocusEffect(useCallback(() => {
     void fetchCaregiverDashboard()
-      .then((dashboard) => { setAlerts(dashboard.alerts); setErro(''); })
+      .then((dashboard) => {
+        setAlerts(dashboard.alerts);
+        setErro(dashboard.cache.fromCache
+          ? `Sem conexão. Exibindo os alertas salvos em ${formatDateTime(dashboard.cache.savedAt!)}. Para alterar o status, conecte-se novamente.`
+          : '');
+      })
       .catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar os alertas.'));
   }, [setAlerts]));
 
