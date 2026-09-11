@@ -106,3 +106,21 @@ systemctl list-timers 'lifeguard-*'
 ```
 
 Os arquivos ficam em `/home/ubuntu/backups/lifeguard-postgres`, fora do repositório. O backup local protege contra erro no banco, mas não contra perda completa da VM; uma cópia externa deverá ser acrescentada antes de uso real em produção.
+
+## Monitoramento da VM
+
+O serviço `lifeguard-monitor` verifica a cada cinco minutos a rota pública `/health`, a conexão da API com o PostgreSQL e o uso do disco principal. O limite de disco padrão é 85%. Falhas e recuperações são registradas no journal e enviadas apenas na mudança de estado, evitando mensagens repetidas.
+
+Para receber os avisos, crie `/etc/lifeguard-monitor.env` com permissão `600`:
+
+```env
+MONITOR_ALERT_EMAIL=responsavel@example.com
+```
+
+Os comandos úteis são:
+
+```bash
+sudo systemctl start lifeguard-monitor.service
+sudo journalctl -u lifeguard-monitor.service --since today
+systemctl list-timers 'lifeguard-*'
+```
