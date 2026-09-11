@@ -9,6 +9,7 @@ export type RootStackParamList = {
   ContaSeguranca: undefined;
   AjudaSobre: undefined;
   Historico: { idosoId?: string; nome?: string } | undefined;
+  HistoricoAlteracoes: { idosoId: string; nome: string };
   MeuDispositivo: undefined;
   ParearDispositivo: undefined;
   Cuidadores: undefined;

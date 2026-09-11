@@ -124,6 +124,13 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
           onPress={() => navigation.navigate('ConfigurarLimites', { idosoId, nome })}
           style={styles.action}
         />
+        <AppButton
+          label="Ver alterações do paciente"
+          icon="history"
+          variant="secondary"
+          onPress={() => navigation.navigate('HistoricoAlteracoes', { idosoId, nome })}
+          style={styles.action}
+        />
         <AppButton label={`Falar com ${nome.split(' ')[0]}`} icon="phone-outline" variant="text" onPress={() => navigation.navigate('ContatoRapido', { idosoId, nome, telefone: leitura.telefone })} />
         <AppButton label="Remover dos meus cuidados" icon="account-remove-outline" variant="danger" onPress={handleRemove} style={styles.removeButton} />
       </ScrollView>

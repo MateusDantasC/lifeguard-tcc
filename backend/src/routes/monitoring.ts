@@ -174,6 +174,32 @@ monitoringRouter.get('/idosos/:idosoId/leituras', async (req, res) => {
   res.json({ leituras: readings.map(serializeReading) });
 });
 
+monitoringRouter.get('/idosos/:idosoId/alteracoes', async (req, res) => {
+  const elderId = idSchema.parse(req.params.idosoId);
+  await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
+  const changes = await prisma.patientChangeLog.findMany({
+    where: { patientId: elderId },
+    include: { changedBy: { select: { id: true, name: true, type: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+  res.json({
+    alteracoes: changes.map((change) => ({
+      id: change.id,
+      categoria: change.category === 'ALERT_LIMITS' ? 'limites' : 'perfil',
+      campos: change.changedFields,
+      alteradoEm: change.createdAt,
+      alteradoPor: change.changedBy
+        ? {
+            id: change.changedBy.id,
+            nome: change.changedBy.name,
+            tipo: change.changedBy.type === UserType.ELDER ? 'paciente' : 'cuidador',
+          }
+        : null,
+    })),
+  });
+});
+
 monitoringRouter.get('/idosos/:idosoId/limites', async (req, res) => {
   const elderId = idSchema.parse(req.params.idosoId);
   await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
@@ -192,24 +218,44 @@ monitoringRouter.put('/idosos/:idosoId/limites', async (req, res) => {
   const elderId = idSchema.parse(req.params.idosoId);
   const input = limitsSchema.parse(req.body);
   await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
-  const limits = await prisma.alertLimit.upsert({
-    where: { elderId },
-    create: {
-      elderId,
-      heartRateMinimum: input.batimentoMin,
-      heartRateMaximum: input.batimentoMax,
-      temperatureMinimum: input.temperaturaMin,
-      temperatureMaximum: input.temperaturaMax,
-      definedById: req.auth!.userId,
-    },
-    update: {
-      heartRateMinimum: input.batimentoMin,
-      heartRateMaximum: input.batimentoMax,
-      temperatureMinimum: input.temperaturaMin,
-      temperatureMaximum: input.temperaturaMax,
-      definedById: req.auth!.userId,
-    },
-    include: { definedBy: { select: { name: true } } },
+  const currentLimits = await prisma.alertLimit.findUnique({ where: { elderId } });
+  const changedFields: string[] = [];
+  if (currentLimits?.heartRateMinimum !== input.batimentoMin) changedFields.push('batimento_minimo');
+  if (currentLimits?.heartRateMaximum !== input.batimentoMax) changedFields.push('batimento_maximo');
+  if (currentLimits?.temperatureMinimum !== input.temperaturaMin) changedFields.push('temperatura_minima');
+  if (currentLimits?.temperatureMaximum !== input.temperaturaMax) changedFields.push('temperatura_maxima');
+
+  const limits = await prisma.$transaction(async (tx) => {
+    const updated = await tx.alertLimit.upsert({
+      where: { elderId },
+      create: {
+        elderId,
+        heartRateMinimum: input.batimentoMin,
+        heartRateMaximum: input.batimentoMax,
+        temperatureMinimum: input.temperaturaMin,
+        temperatureMaximum: input.temperaturaMax,
+        definedById: req.auth!.userId,
+      },
+      update: {
+        heartRateMinimum: input.batimentoMin,
+        heartRateMaximum: input.batimentoMax,
+        temperatureMinimum: input.temperaturaMin,
+        temperatureMaximum: input.temperaturaMax,
+        definedById: req.auth!.userId,
+      },
+      include: { definedBy: { select: { name: true } } },
+    });
+    if (changedFields.length > 0) {
+      await tx.patientChangeLog.create({
+        data: {
+          patientId: elderId,
+          changedById: req.auth!.userId,
+          category: 'ALERT_LIMITS',
+          changedFields,
+        },
+      });
+    }
+    return updated;
   });
   res.json({ limites: serializeLimits(limits) });
 });

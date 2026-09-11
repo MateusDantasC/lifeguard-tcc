@@ -274,6 +274,7 @@ export default function PerfilScreen({ navigation }: Props) {
           {!editing ? <PushNotificationsCard /> : null}
 
           {!editing ? <Card style={styles.card}>
+            {user?.tipo === 'idoso' ? <ProfileActionRow icon="history" label="Histórico de alterações" onPress={() => navigation.navigate('HistoricoAlteracoes', { idosoId: user.id, nome: user.nome })} /> : null}
             <ProfileActionRow icon="shield-account-outline" label="Conta e segurança" onPress={() => navigation.navigate('ContaSeguranca')} />
             <ProfileActionRow icon="help-circle-outline" label="Ajuda e sobre o LifeGuard" onPress={() => navigation.navigate('AjudaSobre')} last />
           </Card> : null}

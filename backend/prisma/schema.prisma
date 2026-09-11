@@ -93,6 +93,21 @@ model User {
   sessions               AuthSession[]
   accountCodes           AccountCode[]
   linkCodes              ElderLinkCode[]
+  patientChanges         PatientChangeLog[] @relation("PatientChangeSubject")
+  authoredPatientChanges PatientChangeLog[] @relation("PatientChangeAuthor")
+}
+
+model PatientChangeLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  patientId     String   @db.Uuid
+  changedById   String?  @db.Uuid
+  category      String
+  changedFields String[]
+  createdAt     DateTime @default(now())
+  patient       User     @relation("PatientChangeSubject", fields: [patientId], references: [id], onDelete: Cascade)
+  changedBy     User?    @relation("PatientChangeAuthor", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([patientId, createdAt(sort: Desc)])
 }
 
 model AccountCode {

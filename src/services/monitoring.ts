@@ -37,6 +37,14 @@ type ApiLimits = {
 
 export type Reading = ApiReading;
 
+export type PatientChange = {
+  id: string;
+  categoria: 'perfil' | 'limites';
+  campos: string[];
+  alteradoEm: string;
+  alteradoPor: { id: string; nome: string; tipo: 'paciente' | 'cuidador' } | null;
+};
+
 export function mapElder(elder: ApiElder): Elder {
   return {
     id: elder.id,
@@ -102,6 +110,11 @@ export async function saveLimits(elderId: string, limits: Omit<AlertLimits, 'upd
 export async function fetchReadings(elderId: string, limit = 100) {
   const response = await apiRequest<{ leituras: Reading[] }>(`/idosos/${elderId}/leituras?limite=${limit}`);
   return response.leituras;
+}
+
+export async function fetchPatientChanges(elderId: string) {
+  const response = await apiRequest<{ alteracoes: PatientChange[] }>(`/idosos/${elderId}/alteracoes`);
+  return response.alteracoes;
 }
 
 export async function fetchCaregivers(): Promise<Caregiver[]> {

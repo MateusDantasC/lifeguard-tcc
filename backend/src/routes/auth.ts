@@ -322,6 +322,15 @@ authRouter.get('/me/exportacao', requireAuth, async (req, res) => {
           revokedAt: true,
         },
       },
+      patientChanges: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          category: true,
+          changedFields: true,
+          createdAt: true,
+          changedBy: { select: { id: true, name: true } },
+        },
+      },
     },
   });
   if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
@@ -385,6 +394,12 @@ authRouter.get('/me/exportacao', requireAuth, async (req, res) => {
     alertas: user.alerts,
     notificacoesRecebidas: user.notificationRecipients,
     sessoes: user.sessions,
+    historicoDeAlteracoes: user.patientChanges.map((change) => ({
+      categoria: change.category === 'ALERT_LIMITS' ? 'limites_de_alerta' : 'perfil',
+      camposAlterados: change.changedFields,
+      alteradoEm: change.createdAt.toISOString(),
+      alteradoPor: change.changedBy,
+    })),
   });
 });
 
@@ -394,16 +409,17 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   if (emailOwner && emailOwner.id !== req.auth!.userId) {
     throw new HttpError(409, 'Este e-mail já está cadastrado.', 'EMAIL_IN_USE');
   }
-  const currentUser = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { type: true } });
+  const currentUser = await prisma.user.findUnique({
+    where: { id: req.auth!.userId },
+    include: { elderProfile: true },
+  });
   if (!currentUser) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
   if (input.perfilIdoso && currentUser.type !== UserType.ELDER) {
     throw new HttpError(403, 'Somente o paciente pode preencher suas informações de saúde.', 'ELDER_ONLY');
   }
 
   const profile = input.perfilIdoso;
-  const currentEmail = await prisma.user.findUnique({ where: { id: req.auth!.userId }, select: { email: true } });
-  if (!currentEmail) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');
-  const emailChanged = currentEmail.email !== input.email;
+  const emailChanged = currentUser.email !== input.email;
   if (emailChanged) {
     await prisma.accountCode.updateMany({
       where: { userId: req.auth!.userId, type: AccountCodeType.EMAIL_VERIFICATION, usedAt: null },
@@ -421,18 +437,51 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
     emergencyContactPhone: profile.contatoEmergenciaTelefone || null,
   } : undefined;
 
-  const user = await prisma.user.update({
-    where: { id: req.auth!.userId },
-    data: {
-      name: input.nome,
-      email: input.email,
-      ...(emailChanged ? { emailVerifiedAt: null } : {}),
-      phone: input.telefone || null,
-      ...(input.genero !== undefined ? { gender: input.genero ? genderMap[input.genero] : null } : {}),
-      ...(input.foto !== undefined ? { profilePhoto: input.foto } : {}),
-      ...(profileData ? { elderProfile: { upsert: { create: profileData, update: profileData } } } : {}),
-    },
-    include: { elderProfile: true },
+  const changedFields: string[] = [];
+  if (currentUser.name !== input.nome) changedFields.push('nome');
+  if (currentUser.email !== input.email) changedFields.push('email');
+  if (currentUser.phone !== (input.telefone || null)) changedFields.push('telefone');
+  if (input.genero !== undefined && currentUser.gender !== (input.genero ? genderMap[input.genero] : null)) changedFields.push('genero');
+  if (input.foto !== undefined && currentUser.profilePhoto !== input.foto) changedFields.push('foto');
+
+  if (profileData) {
+    const currentProfile = currentUser.elderProfile;
+    const birthDateChanged = currentProfile?.birthDate?.toISOString().slice(0, 10) !== profileData.birthDate?.toISOString().slice(0, 10);
+    if (birthDateChanged) changedFields.push('data_nascimento');
+    if ((currentProfile?.bloodType ?? null) !== profileData.bloodType) changedFields.push('tipo_sanguineo');
+    if ((currentProfile?.allergies ?? null) !== profileData.allergies) changedFields.push('alergias');
+    if ((currentProfile?.medications ?? null) !== profileData.medications) changedFields.push('medicamentos');
+    if ((currentProfile?.medicalConditions ?? null) !== profileData.medicalConditions) changedFields.push('condicoes_medicas');
+    if ((currentProfile?.importantNotes ?? null) !== profileData.importantNotes) changedFields.push('observacoes_importantes');
+    if ((currentProfile?.emergencyContactName ?? null) !== profileData.emergencyContactName) changedFields.push('contato_emergencia_nome');
+    if ((currentProfile?.emergencyContactPhone ?? null) !== profileData.emergencyContactPhone) changedFields.push('contato_emergencia_telefone');
+  }
+
+  const user = await prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id: req.auth!.userId },
+      data: {
+        name: input.nome,
+        email: input.email,
+        ...(emailChanged ? { emailVerifiedAt: null } : {}),
+        phone: input.telefone || null,
+        ...(input.genero !== undefined ? { gender: input.genero ? genderMap[input.genero] : null } : {}),
+        ...(input.foto !== undefined ? { profilePhoto: input.foto } : {}),
+        ...(profileData ? { elderProfile: { upsert: { create: profileData, update: profileData } } } : {}),
+      },
+      include: { elderProfile: true },
+    });
+    if (currentUser.type === UserType.ELDER && changedFields.length > 0) {
+      await tx.patientChangeLog.create({
+        data: {
+          patientId: currentUser.id,
+          changedById: currentUser.id,
+          category: 'PROFILE',
+          changedFields,
+        },
+      });
+    }
+    return updated;
   });
   res.json({ usuario: serializeUser(user, user.elderProfile) });
 });

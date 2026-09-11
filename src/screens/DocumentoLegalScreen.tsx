@@ -28,7 +28,7 @@ const documents = {
       ['Como os dados são usados', 'Os dados permitem autenticar a conta, exibir o perfil, conectar pacientes e cuidadores e apresentar o histórico de monitoramento.'],
       ['Compartilhamento no cuidado', 'As informações do paciente ficam disponíveis para os cuidadores autorizados por meio do código de vínculo. O vínculo pode ser removido pelo paciente ou pelo cuidador.'],
       ['Armazenamento e segurança', 'A comunicação com a API usa HTTPS e a sessão é protegida no aparelho. Como o projeto ainda está em desenvolvimento, não devem ser inseridos dados médicos reais ou sensíveis sem autorização.'],
-      ['Controle dos dados', 'O usuário pode editar informações do perfil, remover vínculos e excluir sua conta pelo próprio aplicativo. Recursos completos de exportação e retenção de dados serão implementados antes de uma publicação definitiva.'],
+      ['Controle dos dados', 'O usuário pode editar informações do perfil, remover vínculos, exportar uma cópia dos próprios dados e excluir sua conta pelo aplicativo. Os prazos definitivos de retenção serão definidos antes da publicação pública.'],
     ],
   },
 } as const;

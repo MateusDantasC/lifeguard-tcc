@@ -23,7 +23,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 - Cache seguro dos últimos dados para consulta sem conexão.
 - Revisão completa de estados vazios, carregamento, erro e tentativa novamente.
 - Revisão de acessibilidade: leitor de tela, contraste, tamanhos de toque e textos ampliados.
-- Histórico de alterações importantes no perfil do paciente.
+- [Concluído] Histórico de alterações importantes no perfil e nos limites do paciente, visível apenas ao paciente e aos cuidadores vinculados.
 
 ## 3. Confiabilidade da infraestrutura
 
