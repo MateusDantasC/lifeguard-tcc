@@ -7,6 +7,7 @@ test('remove campos sensíveis de logs estruturados', () => {
     requestId: 'request-1',
     email: 'paciente@example.com',
     nested: { password: 'Teste123!', token: 'segredo', status: 500 },
+    optional: undefined,
   }));
 
   assert.equal(parsed.email, '[REDACTED]');
@@ -14,6 +15,7 @@ test('remove campos sensíveis de logs estruturados', () => {
   assert.equal(parsed.nested.token, '[REDACTED]');
   assert.equal(parsed.nested.status, 500);
   assert.equal(parsed.requestId, 'request-1');
+  assert.equal('optional' in parsed, false);
 });
 
 test('não inclui mensagem nem stack de erros inesperados', () => {

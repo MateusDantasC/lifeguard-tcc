@@ -6,6 +6,7 @@ const SENSITIVE_KEY = /(authorization|cookie|password|senha|secret|token|email|p
 function sanitize(value: unknown, key = '', depth = 0): unknown {
   if (SENSITIVE_KEY.test(key)) return '[REDACTED]';
   if (depth > 4) return '[TRUNCATED]';
+  if (value === undefined) return undefined;
   if (typeof value === 'string') return value.slice(0, 500);
   if (typeof value === 'number' || typeof value === 'boolean' || value === null) return value;
   if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitize(item, '', depth + 1));
