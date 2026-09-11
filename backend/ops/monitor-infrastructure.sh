@@ -6,6 +6,8 @@ HEALTH_URL="${LIFEGUARD_HEALTH_URL:-https://${PUBLIC_HOST}/health}"
 DISK_THRESHOLD="${LIFEGUARD_DISK_THRESHOLD:-85}"
 STATE_DIR="${LIFEGUARD_MONITOR_STATE_DIR:-/home/ubuntu/.local/state/lifeguard-monitor}"
 STATE_FILE="${STATE_DIR}/last-status"
+PROJECT_DIR="${LIFEGUARD_PROJECT_DIR:-/home/ubuntu/lifeguard-tcc/backend}"
+COMPOSE_FILE="${LIFEGUARD_COMPOSE_FILE:-${PROJECT_DIR}/compose.production.yml}"
 
 mkdir -p "${STATE_DIR}"
 chmod 700 "${STATE_DIR}"
@@ -37,43 +39,14 @@ send_email() {
   local subject="$1"
   local body="$2"
 
-  if [[ -z "${MONITOR_ALERT_EMAIL:-}" || -z "${SMTP_HOST:-}" || -z "${SMTP_USER:-}" || -z "${SMTP_PASSWORD:-}" || -z "${EMAIL_FROM:-}" ]]; then
-    printf 'Aviso por e-mail não configurado; registre MONITOR_ALERT_EMAIL e as variáveis SMTP.\n' >&2
+  if [[ -z "${MONITOR_ALERT_EMAIL:-}" ]]; then
+    printf 'Aviso por e-mail não configurado; registre MONITOR_ALERT_EMAIL.\n' >&2
     return 0
   fi
 
-  local from_address="${EMAIL_FROM}"
-  if [[ "${EMAIL_FROM}" =~ \<([^\>]*)\> ]]; then
-    from_address="${BASH_REMATCH[1]}"
-  fi
-
-  local message_file
-  message_file="$(mktemp)"
-  {
-    printf 'From: %s\r\n' "${EMAIL_FROM}"
-    printf 'To: %s\r\n' "${MONITOR_ALERT_EMAIL}"
-    printf 'Subject: %s\r\n' "${subject}"
-    printf 'Content-Type: text/plain; charset=UTF-8\r\n'
-    printf '\r\n%b\r\n' "${body}"
-  } > "${message_file}"
-
-  local smtp_scheme="smtp"
-  local tls_options=(--ssl-reqd)
-  if [[ "${SMTP_SECURE:-false}" == "true" ]]; then
-    smtp_scheme="smtps"
-    tls_options=()
-  fi
-
-  local curl_result=0
-  curl --fail --silent --show-error \
-    --url "${smtp_scheme}://${SMTP_HOST}:${SMTP_PORT:-587}" \
-    "${tls_options[@]}" \
-    --user "${SMTP_USER}:${SMTP_PASSWORD}" \
-    --mail-from "${from_address}" \
-    --mail-rcpt "${MONITOR_ALERT_EMAIL}" \
-    --upload-file "${message_file}" || curl_result=$?
-  rm -f -- "${message_file}"
-  return "${curl_result}"
+  cd "${PROJECT_DIR}"
+  docker compose -f "${COMPOSE_FILE}" run --rm --no-deps -T api \
+    node dist/src/scripts/send-monitor-email.js "${MONITOR_ALERT_EMAIL}" "${subject}" "${body}"
 }
 
 if [[ "${current_status}" != "${previous_status}" ]]; then

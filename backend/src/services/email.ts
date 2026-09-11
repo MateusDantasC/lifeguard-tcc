@@ -40,3 +40,12 @@ export function sendEmailVerificationCode(to: string, code: string) {
 export function sendPasswordResetCode(to: string, code: string) {
   return sendCode(to, 'Recupere sua senha do LifeGuard', 'Recuperação de senha', 'Digite este código no aplicativo para criar uma nova senha:', code);
 }
+
+export function sendInfrastructureAlert(to: string, subject: string, text: string) {
+  return getTransport().sendMail({
+    from: env.EMAIL_FROM,
+    to,
+    subject,
+    text,
+  });
+}
