@@ -8,6 +8,7 @@ import { linksRouter } from './routes/links.js';
 import { monitoringRouter } from './routes/monitoring.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { prisma } from './lib/prisma.js';
+import { requestLogging } from './middleware/request-logging.js';
 
 export const app = express();
 
@@ -15,6 +16,7 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({ origin: env.APP_ORIGIN === '*' ? true : env.APP_ORIGIN }));
+app.use(requestLogging);
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', async (_req, res) => {

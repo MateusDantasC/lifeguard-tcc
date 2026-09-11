@@ -7,6 +7,7 @@ import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../serializers.js';
 import { sendPushToUsers } from '../services/push.js';
+import { log, safeErrorFields } from '../lib/logger.js';
 
 export const linksRouter = Router();
 linksRouter.use(requireAuth);
@@ -105,7 +106,7 @@ linksRouter.post('/', async (req, res) => {
     title: 'Novo cuidador vinculado',
     body: 'Um cuidador usou seu código e agora faz parte da sua rede de cuidado.',
     data: { tipo: 'novo_vinculo' },
-  }, undefined, 'link_update').catch((error) => console.error('Falha ao enviar notificação de vínculo:', error));
+  }, undefined, 'link_update').catch((error) => log('error', 'link_notification_failed', safeErrorFields(error)));
 });
 
 linksRouter.delete('/:vinculoId', async (req, res) => {

@@ -29,7 +29,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 - [Concluído] Backup automático diário, retenção de 14 dias e teste semanal de restauração do PostgreSQL.
 - [Concluído] Monitoramento interno e externo da API, do PostgreSQL e do uso de disco da VM, com aviso sem duplicação no GitHub.
-- Registro estruturado de erros sem armazenar dados sensíveis.
+- [Concluído] Registro estruturado de requisições e erros, com correlação e rotação, sem armazenar dados sensíveis.
 - Relatórios de entrega das notificações push e limpeza de tokens inválidos.
 - Ambientes separados de teste e produção.
 - Domínio próprio para a API.

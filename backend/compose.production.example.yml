@@ -13,6 +13,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   api:
     build: .
@@ -34,6 +39,11 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-}
     expose:
       - "3333"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   caddy:
     image: caddy:2-alpine
@@ -50,6 +60,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - lifeguard_caddy_data:/data
       - lifeguard_caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 volumes:
   lifeguard_postgres_data:

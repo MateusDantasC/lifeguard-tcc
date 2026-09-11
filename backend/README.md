@@ -113,6 +113,14 @@ O serviço `lifeguard-monitor` verifica a cada cinco minutos a rota pública `/h
 
 O workflow `monitor-production.yml` faz a verificação de fora da Oracle. Se a VM ou a API ficar inacessível, ele abre uma única issue de monitoramento no GitHub; quando o serviço se recuperar, a issue é fechada automaticamente. Assim, uma pane completa da própria VM também fica visível.
 
+## Logs da API
+
+A API escreve uma linha JSON por evento, com horário, nível, identificador da requisição, rota, status e duração. O mesmo identificador é devolvido no cabeçalho `X-Request-Id` e no corpo das respostas de erro, facilitando localizar um problema relatado. Os logs não incluem corpo da requisição, credenciais, códigos temporários, contato ou dados médicos; campos sensíveis também passam por uma proteção adicional antes da serialização. No Docker, cada serviço mantém no máximo cinco arquivos de 10 MB.
+
+```bash
+docker compose -f compose.production.yml logs --since 30m api
+```
+
 Para receber os avisos, crie `/etc/lifeguard-monitor.env` com permissão `600`:
 
 ```env
