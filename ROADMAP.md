@@ -21,7 +21,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 - [Concluído] Abrir a tela correta ao tocar em uma notificação.
 - [Concluído] Preferências de notificação por categoria, respeitadas pelo servidor.
 - [Concluído] Cache criptografado e separado por conta dos últimos dados de monitoramento e alertas para consulta sem conexão.
-- Revisão completa de estados vazios, carregamento, erro e tentativa novamente.
+- [Concluído] Revisão dos estados vazios, carregamento, erro, atualização e tentativa novamente nas telas conectadas à API.
 - Revisão de acessibilidade: leitor de tela, contraste, tamanhos de toque e textos ampliados.
 - [Concluído] Histórico de alterações importantes no perfil e nos limites do paciente, visível apenas ao paciente e aos cuidadores vinculados.
 

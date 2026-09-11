@@ -16,6 +16,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { fetchElder } from '../../services/monitoring';
 import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
+import EmptyState from '../../components/EmptyState';
+import LoadingState from '../../components/LoadingState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
 
@@ -25,6 +27,7 @@ export default function HomeIdosoScreen({ navigation }: Props) {
   const upsertElder = useMonitoringStore((state) => state.upsertElder);
   const setLimits = useMonitoringStore((state) => state.setLimits);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [erro, setErro] = useState('');
 
   const refresh = useCallback(async (showSpinner = false) => {
@@ -37,8 +40,10 @@ export default function HomeIdosoScreen({ navigation }: Props) {
       setErro(result.cache.fromCache
         ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(result.cache.savedAt!)}.`
         : '');
+      setLoadState('ready');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
+      setLoadState('error');
     } finally {
       setRefreshing(false);
     }
@@ -71,9 +76,11 @@ export default function HomeIdosoScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
         <HomeHeader title={`Olá, ${(user?.nome ?? 'Usuário').split(' ')[0]}`} subtitle="Seu cuidado está sendo acompanhado" photo={user?.foto} accountType="idoso" onProfile={() => navigation.navigate('Perfil')} />
 
-        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+        {erro && leitura ? <InlineNotice tone="warning" message={erro} /> : null}
 
-        <Card style={styles.statusCard}>
+        {loadState === 'loading' && !leitura ? <LoadingState message="Carregando seu monitoramento..." /> : loadState === 'error' && !leitura ? (
+          <EmptyState icon="cloud-alert-outline" title="Monitoramento indisponível" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void refresh(true); }} />
+        ) : <><Card style={styles.statusCard}>
           <View style={styles.statusCopy}><Text style={styles.statusTitle}>{status === 'normal' ? 'Tudo bem por aqui' : status === 'sem_sinal' ? 'Aguardando sinal' : 'Atenção aos seus sinais'}</Text><Text style={styles.statusSubtitle}>Dados atualizados {leitura?.ultimaAtualizacao ?? 'assim que houver uma leitura'}</Text></View>
           <StatusPill status={status} />
         </Card>
@@ -82,6 +89,7 @@ export default function HomeIdosoScreen({ navigation }: Props) {
           <VitalCard icon="heart-pulse" iconColor={colors.ember} value={leitura?.batimento ?? '--'} unit="bpm" label="Batimento" showPulse />
           <VitalCard icon="thermometer" iconColor={colors.amber} value={leitura?.temperatura ?? '--'} unit="°C" label="Temperatura" />
         </View>
+        </>}
 
         <SectionHeader title="Acesso rápido" />
         <View style={styles.grid}>

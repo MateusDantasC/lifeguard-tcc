@@ -17,6 +17,8 @@ import { apiRequest, ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import { formatPhone } from '../../utils/phone';
 import { formatGender } from '../../components/GenderSelector';
+import EmptyState from '../../components/EmptyState';
+import LoadingState from '../../components/LoadingState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'DetalheIdoso'>;
 
@@ -28,6 +30,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
   const removeElder = useMonitoringStore((state) => state.removeElder);
   const [refreshing, setRefreshing] = useState(false);
   const [erro, setErro] = useState('');
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const leitura = elder ?? { id: idosoId, nome, batimento: null, temperatura: null, status: 'sem_sinal' as const, ultimaAtualizacao: 'indisponível', telefone: '' };
   const profile = leitura.perfilIdoso;
   const emergencyContact = profile?.contatoEmergenciaNome && profile?.contatoEmergenciaTelefone
@@ -43,8 +46,10 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
       setErro(result.cache.fromCache
         ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(result.cache.savedAt!)}.`
         : '');
+      setLoadState('ready');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
+      setLoadState('error');
     } finally {
       setRefreshing(false);
     }
@@ -80,7 +85,10 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
       <BackHeader title={nome} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
-        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+        {erro && elder ? <InlineNotice tone="warning" message={erro} /> : null}
+        {loadState === 'loading' && !elder ? <LoadingState message={`Carregando os dados de ${nome}...`} /> : loadState === 'error' && !elder ? (
+          <EmptyState icon="cloud-alert-outline" title="Dados indisponíveis" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void refresh(true); }} />
+        ) : <>
         <Card style={styles.patientCard}>
           <View style={styles.identityRow}>
             <View style={styles.avatar}>
@@ -135,6 +143,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
         />
         <AppButton label={`Falar com ${nome.split(' ')[0]}`} icon="phone-outline" variant="text" onPress={() => navigation.navigate('ContatoRapido', { idosoId, nome, telefone: leitura.telefone })} />
         <AppButton label="Remover dos meus cuidados" icon="account-remove-outline" variant="danger" onPress={handleRemove} style={styles.removeButton} />
+        </>}
       </ScrollView>
     </SafeAreaView>
   );

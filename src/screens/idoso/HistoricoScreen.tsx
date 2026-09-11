@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryScatter } from 'victory-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,6 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { apiRequest, ApiError, formatDateTime } from '../../services/api';
 import { fetchReadings, type Reading } from '../../services/monitoring';
 import type { MonitoringAlert } from '../../store/monitoringStore';
+import LoadingState from '../../components/LoadingState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Historico'>;
 
@@ -29,18 +30,30 @@ export default function HistoricoScreen({ navigation, route }: Props) {
   const [leituras, setLeituras] = useState<Reading[]>([]);
   const [picos, setPicos] = useState<MonitoringAlert[]>([]);
   const [erro, setErro] = useState('');
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
+  const loadHistory = useCallback(async (refresh = false) => {
     if (!elderId) return;
-    void Promise.all([
-      fetchReadings(elderId, 100),
-      apiRequest<{ alertas: Array<Omit<MonitoringAlert, 'horario'> & { horario: string }> }>('/alertas'),
-    ]).then(([readings, alerts]) => {
+    if (refresh) setRefreshing(true);
+    try {
+      const [readings, alerts] = await Promise.all([
+        fetchReadings(elderId, 100),
+        apiRequest<{ alertas: Array<Omit<MonitoringAlert, 'horario'> & { horario: string }> }>('/alertas'),
+      ]);
       setLeituras(readings);
       setPicos(alerts.alertas.filter((alert) => alert.idosoId === elderId).map((alert) => ({ ...alert, horario: formatDateTime(alert.horario) })));
       setErro('');
-    }).catch((error) => setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar o histórico.'));
-  }, [elderId]));
+      setLoadState('ready');
+    } catch (error) {
+      setErro(error instanceof ApiError ? error.message : 'Não foi possível carregar o histórico.');
+      setLoadState('error');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [elderId]);
+
+  useFocusEffect(useCallback(() => { void loadHistory(); }, [loadHistory]));
 
   const pontos = useMemo(() => leituras
     .filter((reading) => reading.valida && (metrica === 'batimento' ? reading.batimento !== null : reading.temperatura !== null))
@@ -59,8 +72,11 @@ export default function HistoricoScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title={nomeIdoso ? `Histórico de ${nomeIdoso}` : 'Histórico'} onBack={() => navigation.goBack()} />
 
-      <ScrollView contentContainerStyle={styles.container}>
-        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+      <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadHistory(true)} tintColor={colors.coral} />}>
+        {erro && (leituras.length > 0 || picos.length > 0) ? <InlineNotice tone="warning" message={erro} /> : null}
+        {loadState === 'loading' && leituras.length === 0 && picos.length === 0 ? <LoadingState message="Carregando histórico de saúde..." /> : loadState === 'error' && leituras.length === 0 && picos.length === 0 ? (
+          <EmptyState icon="cloud-alert-outline" title="Histórico indisponível" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void loadHistory(); }} />
+        ) : <>
         <SegmentedToggle
           value={metrica}
           onChange={setMetrica}
@@ -120,6 +136,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
             </View>
           </Card>
         ))}
+        </>}
       </ScrollView>
     </SafeAreaView>
   );

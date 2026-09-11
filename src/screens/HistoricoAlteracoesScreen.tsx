@@ -12,6 +12,7 @@ import InlineNotice from '../components/InlineNotice';
 import { colors, fonts } from '../theme/theme';
 import { ApiError, formatDateTime } from '../services/api';
 import { fetchPatientChanges, type PatientChange } from '../services/monitoring';
+import LoadingState from '../components/LoadingState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HistoricoAlteracoes'>;
 
@@ -69,14 +70,14 @@ export default function HistoricoAlteracoesScreen({ navigation, route }: Props) 
       >
         <Text style={styles.subtitle}>Registro das informações importantes de {nome} e de quem realizou cada alteração.</Text>
         <InlineNotice message="Por privacidade, o histórico informa quais campos mudaram, mas não exibe os valores anteriores." />
-        {error ? <InlineNotice tone="warning" message={error} /> : null}
+        {error && changes.length > 0 ? <InlineNotice tone="warning" message={error} /> : null}
         {loading ? (
-          <View style={styles.loading}><Text style={styles.loadingText}>Carregando alterações...</Text></View>
+          <LoadingState message="Carregando alterações..." />
         ) : changes.length === 0 ? (
           <EmptyState
-            icon="history"
-            title="Nenhuma alteração registrada"
-            message="As próximas mudanças no perfil e nos limites de alerta aparecerão aqui."
+            icon={error ? 'cloud-alert-outline' : 'history'}
+            title={error ? 'Histórico indisponível' : 'Nenhuma alteração registrada'}
+            message={error || 'As próximas mudanças no perfil e nos limites de alerta aparecerão aqui.'}
             actionLabel={error ? 'Tentar novamente' : undefined}
             onAction={error ? () => void load() : undefined}
           />
@@ -120,8 +121,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
   container: { paddingHorizontal: 20, paddingBottom: 40, gap: 14 },
   subtitle: { fontFamily: fonts.body, fontSize: 14, lineHeight: 21, color: colors.textSecondary, marginBottom: 2 },
-  loading: { paddingVertical: 44, alignItems: 'center' },
-  loadingText: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
   list: { gap: 12 },
   card: { gap: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },

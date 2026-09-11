@@ -15,6 +15,7 @@ import { fetchCaregiverDashboard } from '../../services/monitoring';
 import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import EmptyState from '../../components/EmptyState';
+import LoadingState from '../../components/LoadingState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeCuidador'>;
 
@@ -25,6 +26,7 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
   const setElders = useMonitoringStore((state) => state.setElders);
   const setAlerts = useMonitoringStore((state) => state.setAlerts);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [erro, setErro] = useState('');
 
   const refresh = useCallback(async (showSpinner = false) => {
@@ -36,8 +38,10 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
       setErro(dashboard.cache.fromCache
         ? `Sem conexão. Exibindo os últimos dados salvos em ${formatDateTime(dashboard.cache.savedAt!)}.`
         : '');
+      setLoadState('ready');
     } catch (error) {
       setErro(error instanceof ApiError ? error.message : 'Não foi possível atualizar os dados.');
+      setLoadState('error');
     } finally {
       setRefreshing(false);
     }
@@ -62,11 +66,15 @@ export default function HomeCuidadorScreen({ navigation }: Props) {
           notificationCount={alertCount}
         />
 
-        {erro ? <InlineNotice tone="warning" message={erro} /> : null}
+        {erro && idosos.length > 0 ? <InlineNotice tone="warning" message={erro} /> : null}
 
         <SectionHeader title="Pessoas acompanhadas" actionLabel="Ver alertas" onAction={() => navigation.navigate('Alertas')} />
 
-        {idosos.length === 0 ? (
+        {loadState === 'loading' && idosos.length === 0 ? (
+          <LoadingState message="Carregando pessoas acompanhadas..." />
+        ) : loadState === 'error' && idosos.length === 0 ? (
+          <EmptyState icon="cloud-alert-outline" title="Não foi possível carregar" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void refresh(true); }} />
+        ) : idosos.length === 0 ? (
           <EmptyState
             icon="account-heart-outline"
             title="Sua rede começa aqui"
