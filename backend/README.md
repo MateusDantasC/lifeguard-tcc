@@ -90,3 +90,19 @@ docker compose -f compose.production.yml exec api npm run db:seed
 ```
 
 O contêiner da API aplica as migrations ao iniciar. O PostgreSQL não é publicado na internet; somente o Caddy recebe tráfego externo e encaminha as requisições para a API por HTTPS. Verifique a implantação em `https://api.seu-dominio.com/health`.
+
+## Backup e restauração
+
+Os scripts em `ops/` criam backups diários criptografáveis pelo próprio disco da VM, com permissões restritas, validação do arquivo e retenção padrão de 14 dias. Uma vez por semana, o backup mais recente é restaurado em um banco temporário para confirmar que ele é utilizável; o banco principal não é alterado.
+
+Na VM de produção, instale os agendamentos uma vez:
+
+```bash
+cd /home/ubuntu/lifeguard-tcc/backend
+./ops/install-backup-timers.sh
+sudo systemctl start lifeguard-backup.service
+sudo systemctl start lifeguard-restore-test.service
+systemctl list-timers 'lifeguard-*'
+```
+
+Os arquivos ficam em `/home/ubuntu/backups/lifeguard-postgres`, fora do repositório. O backup local protege contra erro no banco, mas não contra perda completa da VM; uma cópia externa deverá ser acrescentada antes de uso real em produção.

@@ -27,7 +27,7 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 ## 3. Confiabilidade da infraestrutura
 
-- Backup automático e teste de restauração do PostgreSQL.
+- [Concluído] Backup automático diário, retenção de 14 dias e teste semanal de restauração do PostgreSQL.
 - Monitoramento de disponibilidade da API e uso de disco da VM.
 - Registro estruturado de erros sem armazenar dados sensíveis.
 - Relatórios de entrega das notificações push e limpeza de tokens inválidos.
