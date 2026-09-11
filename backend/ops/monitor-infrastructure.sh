@@ -52,9 +52,13 @@ send_email() {
 if [[ "${current_status}" != "${previous_status}" ]]; then
   if [[ "${current_status}" == "failure" ]]; then
     details="$(printf '%s\n' "${problems[@]}")"
-    send_email "LifeGuard: falha na infraestrutura" "O monitoramento detectou um problema:\n\n${details}\n\nHorário UTC: $(date -u --iso-8601=seconds)"
+    if ! send_email "LifeGuard: falha na infraestrutura" "O monitoramento detectou um problema:\n\n${details}\n\nHorário UTC: $(date -u --iso-8601=seconds)"; then
+      printf 'Não foi possível enviar o aviso por e-mail; a falha permanece registrada no journal.\n' >&2
+    fi
   elif [[ "${previous_status}" == "failure" ]]; then
-    send_email "LifeGuard: infraestrutura recuperada" "A API e o disco da VM voltaram ao estado normal.\n\nHorário UTC: $(date -u --iso-8601=seconds)"
+    if ! send_email "LifeGuard: infraestrutura recuperada" "A API e o disco da VM voltaram ao estado normal.\n\nHorário UTC: $(date -u --iso-8601=seconds)"; then
+      printf 'Não foi possível enviar o aviso de recuperação por e-mail.\n' >&2
+    fi
   fi
 fi
 

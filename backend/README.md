@@ -111,6 +111,8 @@ Os arquivos ficam em `/home/ubuntu/backups/lifeguard-postgres`, fora do reposit�
 
 O serviço `lifeguard-monitor` verifica a cada cinco minutos a rota pública `/health`, a conexão da API com o PostgreSQL e o uso do disco principal. O limite de disco padrão é 85%. Falhas e recuperações são registradas no journal e enviadas apenas na mudança de estado, evitando mensagens repetidas.
 
+O workflow `monitor-production.yml` faz a verificação de fora da Oracle. Se a VM ou a API ficar inacessível, ele abre uma única issue de monitoramento no GitHub; quando o serviço se recuperar, a issue é fechada automaticamente. Assim, uma pane completa da própria VM também fica visível.
+
 Para receber os avisos, crie `/etc/lifeguard-monitor.env` com permissão `600`:
 
 ```env
