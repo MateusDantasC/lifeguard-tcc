@@ -15,14 +15,14 @@ type Props = {
 
 export default function VitalCard({ icon, iconColor, value, unit, label, showPulse }: Props) {
   return (
-    <Card style={styles.card}>
+    <Card accessible accessibilityLabel={`${label}: ${value} ${unit}`} style={styles.card}>
       {showPulse && (
         <View style={styles.pulseBg} pointerEvents="none">
           <PulseLine variant="background" animated />
         </View>
       )}
-      <MaterialCommunityIcons name={icon} size={28} color={iconColor} />
-      <Text accessibilityLabel={`${label}: ${value} ${unit}`} style={styles.value}>
+      <MaterialCommunityIcons accessible={false} name={icon} size={28} color={iconColor} />
+      <Text style={styles.value}>
         {value} <Text style={styles.unit}>{unit}</Text>
       </Text>
       <Text style={styles.label}>{label}</Text>

@@ -103,24 +103,24 @@ export default function CuidadoresScreen({ navigation }: Props) {
           </Card>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Vinculados a você</Text>
+        <Text accessibilityRole="header" style={styles.sectionTitle}>Vinculados a você</Text>
 
         {loadState === 'loading' && cuidadores.length === 0 ? <LoadingState message="Carregando cuidadores..." /> : loadState === 'error' && cuidadores.length === 0 ? (
           <EmptyState icon="cloud-alert-outline" title="Cuidadores indisponíveis" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void loadCaregivers(); }} />
         ) : cuidadores.length === 0 ? <EmptyState icon="account-group-outline" title="Nenhum cuidador vinculado" message="Gere um código temporário para adicionar uma pessoa de confiança." /> : cuidadores.map((cuidador) => (
           <Card key={cuidador.id} style={styles.cuidadorCard}>
             <View style={styles.avatar}>
-              {cuidador.foto ? <Image source={{ uri: cuidador.foto }} style={styles.avatarImage} /> : <Text style={styles.avatarLabel}>{cuidador.nome.charAt(0)}</Text>}
+              {cuidador.foto ? <Image accessible accessibilityLabel={`Foto de ${cuidador.nome}`} source={{ uri: cuidador.foto }} style={styles.avatarImage} /> : <Text accessibilityLabel={`Foto não cadastrada. Inicial ${cuidador.nome.charAt(0)}`} style={styles.avatarLabel}>{cuidador.nome.charAt(0)}</Text>}
             </View>
             <View style={styles.cuidadorInfo}>
               <Text style={styles.cuidadorNome}>{cuidador.nome}</Text>
               <Text style={styles.cuidadorDesde}>{formatPhone(cuidador.telefone) || 'Telefone não informado'} · {cuidador.vinculadoDesde}</Text>
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel={`Ligar para ${cuidador.nome}`} onPress={() => handleLigar(cuidador.nome, cuidador.telefone)} hitSlop={8} style={styles.callButton}>
-              <MaterialCommunityIcons name="phone-outline" size={22} color={colors.coral} />
+              <MaterialCommunityIcons accessible={false} name="phone-outline" size={22} color={colors.coral} />
             </Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${cuidador.nome}`} onPress={() => handleRemover(cuidador.id, cuidador.nome)} hitSlop={8} style={styles.removeButton}>
-              <MaterialCommunityIcons name="close-circle-outline" size={22} color={colors.ember} />
+              <MaterialCommunityIcons accessible={false} name="close-circle-outline" size={22} color={colors.ember} />
             </Pressable>
           </Card>
         ))}
@@ -145,6 +145,6 @@ const styles = StyleSheet.create({
   cuidadorInfo: { flex: 1 },
   cuidadorNome: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.ink },
   cuidadorDesde: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  callButton: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
+  callButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   removeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 });

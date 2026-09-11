@@ -238,7 +238,7 @@ export default function PerfilScreen({ navigation }: Props) {
           </>}</Card>
 
           {user?.tipo === 'idoso' ? <>
-            <Text style={styles.sectionTitle}>Informações importantes</Text>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>Informações importantes</Text>
             <Text style={styles.sectionHelper}>Esses dados ficam disponíveis somente para você e seus cuidadores vinculados.</Text>
             <Card style={styles.card}>{editing ? <>
               <View style={styles.inlineFields}>
@@ -249,7 +249,7 @@ export default function PerfilScreen({ navigation }: Props) {
               <AppTextInput label="Alergias" value={alergias} onChangeText={setAlergias} placeholder="Medicamentos, alimentos ou outras" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
               <AppTextInput label="Medicamentos em uso" value={medicamentos} onChangeText={setMedicamentos} placeholder="Nome e dosagem, se souber" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
               <AppTextInput label="Observações importantes" value={observacoes} onChangeText={setObservacoes} placeholder="Informações úteis em uma emergência" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
-              <Text style={styles.subsectionTitle}>Contato de emergência</Text>
+              <Text accessibilityRole="header" style={styles.subsectionTitle}>Contato de emergência</Text>
               <AppTextInput label="Nome" value={contatoNome} onChangeText={setContatoNome} editable={!loading} maxLength={100} />
               <CountryPhoneInput
                 country={paisContato}
@@ -291,11 +291,11 @@ export default function PerfilScreen({ navigation }: Props) {
 }
 
 function ProfileRow({ icon, label, value, last }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; value: string; last?: boolean }) {
-  return <View style={[styles.row, !last && styles.rowBorder]}><View style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><View style={styles.rowCopy}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View></View>;
+  return <View accessible accessibilityLabel={`${label}: ${value}`} style={[styles.row, !last && styles.rowBorder]}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.rowCopy}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View></View>;
 }
 
 function ProfileActionRow({ icon, label, onPress, last }: { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; onPress: () => void; last?: boolean }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.actionRow, !last && styles.rowBorder, pressed && styles.actionPressed]}><View style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><Text style={styles.actionLabel}>{label}</Text><MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} /></Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.actionRow, !last && styles.rowBorder, pressed && styles.actionPressed]}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.rowIcon}><MaterialCommunityIcons name={icon} size={21} color={colors.coral} /></View><Text style={styles.actionLabel}>{label}</Text><MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color={colors.textSecondary} /></Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   accountType: { flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: colors.mossBg, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginTop: 8 },
   accountTypeText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.mossText }, card: { marginBottom: 18 },
   sectionTitle: { fontFamily: fonts.display, fontSize: 21, color: colors.ink, marginTop: 4 }, sectionHelper: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textSecondary, marginTop: 4, marginBottom: 12 },
-  subsectionTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink, marginBottom: 12, marginTop: 2 }, inlineFields: { flexDirection: 'row', gap: 10 }, flexField: { flex: 1 }, bloodField: { width: 120 },
+  subsectionTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink, marginBottom: 12, marginTop: 2 }, inlineFields: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, flexField: { flex: 1, minWidth: 180 }, bloodField: { flexGrow: 1, minWidth: 120 },
   multiline: { minHeight: 86, paddingTop: 14, paddingBottom: 14 }, row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border }, rowIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.coralSoft, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1 }, rowLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary }, rowValue: { fontFamily: fonts.bodyBold, fontSize: 15, lineHeight: 21, color: colors.ink, marginTop: 2 },

@@ -26,22 +26,22 @@ export default function AjudaSobreScreen({ navigation }: Props) {
       <BackHeader title="Ajuda e sobre" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.container}>
         <InlineNotice tone="warning" message="Em uma emergência médica, procure atendimento imediatamente ou ligue para o SAMU pelo número 192." />
-        <Text style={styles.title}>Perguntas frequentes</Text>
+        <Text accessibilityRole="header" style={styles.title}>Perguntas frequentes</Text>
         {questions.map(([question, answer], index) => (
           <Card key={question} style={styles.questionCard}>
-            <View style={styles.questionHeader}><Text style={styles.number}>{String(index + 1).padStart(2, '0')}</Text><Text style={styles.question}>{question}</Text></View>
+            <View style={styles.questionHeader}><Text style={styles.number}>{String(index + 1).padStart(2, '0')}</Text><Text accessibilityRole="header" style={styles.question}>{question}</Text></View>
             <Text style={styles.answer}>{answer}</Text>
           </Card>
         ))}
 
-        <Text style={styles.title}>Transparência</Text>
+        <Text accessibilityRole="header" style={styles.title}>Transparência</Text>
         <Card style={styles.linksCard}>
           <LegalLink label="Termos de Uso" icon="file-document-outline" onPress={() => navigation.navigate('DocumentoLegal', { tipo: 'termos' })} />
           <LegalLink label="Política de Privacidade" icon="shield-lock-outline" onPress={() => navigation.navigate('DocumentoLegal', { tipo: 'privacidade' })} last />
         </Card>
 
         <View style={styles.about}>
-          <MaterialCommunityIcons name="heart-pulse" size={34} color={colors.coral} />
+          <MaterialCommunityIcons accessible={false} name="heart-pulse" size={34} color={colors.coral} />
           <Text style={styles.appName}>LifeGuard</Text>
           <Text style={styles.version}>Versão {version}</Text>
           <Text style={styles.academic}>Protótipo acadêmico em desenvolvimento para o Trabalho de Conclusão de Curso.</Text>
@@ -52,7 +52,7 @@ export default function AjudaSobreScreen({ navigation }: Props) {
 }
 
 function LegalLink({ label, icon, onPress, last }: { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; onPress: () => void; last?: boolean }) {
-  return <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.link, !last && styles.linkBorder, pressed && styles.pressed]}><MaterialCommunityIcons name={icon} size={22} color={colors.coral} /><Text style={styles.linkLabel}>{label}</Text><MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} /></Pressable>;
+  return <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.link, !last && styles.linkBorder, pressed && styles.pressed]}><MaterialCommunityIcons accessible={false} name={icon} size={22} color={colors.coral} /><Text style={styles.linkLabel}>{label}</Text><MaterialCommunityIcons accessible={false} name="chevron-right" size={24} color={colors.textSecondary} /></Pressable>;
 }
 
 const styles = StyleSheet.create({

@@ -2,7 +2,8 @@ export const colors = {
   ink: '#1B3A3F',
   sand: '#F6F1E7',
   cardBg: '#FFFDF8',
-  coral: '#E8734A',
+  // Mantém a identidade coral com contraste AA sobre os fundos claros do app.
+  coral: '#B64D2B',
   moss: '#4F7A5B',
   mossBg: '#E1EBDF',
   mossText: '#2F4F38',

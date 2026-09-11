@@ -77,7 +77,7 @@ export default function AlertasScreen({ navigation }: Props) {
         ) : filtrados.length === 0 ? <EmptyState icon="bell-check-outline" title="Tudo resolvido" message="Não há alertas nesta categoria." /> : filtrados.map((alerta) => (
           <Card key={alerta.id} style={styles.card}>
             <View style={styles.rowTop}>
-              <View style={styles.icon}>
+              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.icon}>
                 <MaterialCommunityIcons
                   name={alerta.tipo === 'batimento' ? 'heart-pulse' : 'thermometer'}
                   size={20}
@@ -99,11 +99,11 @@ export default function AlertasScreen({ navigation }: Props) {
 
             {alerta.status !== 'resolvido' && (
               <View style={styles.actions}>
-                {alerta.status === 'novo' ? <Pressable accessibilityRole="button" onPress={() => marcarVisto(alerta.id)} style={styles.actionBtn}><Text style={styles.secondaryAction}>Marcar como visto</Text></Pressable> : null}
-                <Pressable accessibilityRole="button" onPress={() => marcarResolvido(alerta.id)} style={styles.actionBtn}><Text style={styles.resolverLabel}>Resolver alerta</Text></Pressable>
+                {alerta.status === 'novo' ? <Pressable accessibilityRole="button" accessibilityLabel={`Marcar alerta de ${alerta.idosoNome} como visto`} onPress={() => marcarVisto(alerta.id)} style={styles.actionBtn}><Text style={styles.secondaryAction}>Marcar como visto</Text></Pressable> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={`Resolver alerta de ${alerta.idosoNome}`} onPress={() => marcarResolvido(alerta.id)} style={styles.actionBtn}><Text style={styles.resolverLabel}>Resolver alerta</Text></Pressable>
               </View>
             )}
-            <Pressable accessibilityRole="button" onPress={() => navigation.navigate('DetalheIdoso', { idosoId: alerta.idosoId, nome: alerta.idosoNome })} style={styles.personLink}><Text style={styles.personLinkText}>Ver monitoramento de {alerta.idosoNome.split(' ')[0]}</Text><MaterialCommunityIcons name="chevron-right" size={20} color={colors.coral} /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Ver monitoramento de ${alerta.idosoNome}`} onPress={() => navigation.navigate('DetalheIdoso', { idosoId: alerta.idosoId, nome: alerta.idosoNome })} style={styles.personLink}><Text style={styles.personLinkText}>Ver monitoramento de {alerta.idosoNome.split(' ')[0]}</Text><MaterialCommunityIcons accessible={false} name="chevron-right" size={20} color={colors.coral} /></Pressable>
           </Card>
         ))}
       </ScrollView>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   statusTagLabelNovo: { color: colors.emberText ?? colors.ember },
   statusTagLabelResolvido: { color: colors.mossText },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  actionBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  actionBtn: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 4 },
   secondaryAction: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.textSecondary },
   resolverLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.coral },
   personLink: { minHeight: 48, borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

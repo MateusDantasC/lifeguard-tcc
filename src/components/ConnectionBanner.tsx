@@ -44,8 +44,8 @@ export default function ConnectionBanner() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
-      <View accessibilityRole="alert" style={styles.banner}>
-        <MaterialCommunityIcons name="wifi-off" size={18} color={colors.white} />
+      <View accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.banner}>
+        <MaterialCommunityIcons accessible={false} name="wifi-off" size={18} color={colors.white} />
         <Text style={styles.text}>{message}</Text>
       </View>
     </SafeAreaView>
