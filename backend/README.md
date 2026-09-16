@@ -16,6 +16,8 @@ docker compose up -d
 npm install
 npm run prisma:generate
 npm run db:migrate -- --name initial
+$env:DEMO_SEED_ENABLED='true'
+$env:DEMO_SEED_PASSWORD='escolha-uma-senha-local-forte'
 npm run db:seed:build
 ```
 
@@ -28,10 +30,12 @@ npm run simulator
 
 A API fica disponível em `http://localhost:3333`. Verifique com `GET /health`.
 
-## Contas de demonstração
+## Contas de demonstração locais
 
-- Cuidador: `ana@lifeguard.test` / `Teste123!`
-- Paciente: `maria@lifeguard.test` / `Teste123!`
+- Cuidador: `ana@lifeguard.test`
+- Paciente: `maria@lifeguard.test`
+
+As duas contas usam a senha definida localmente em `DEMO_SEED_PASSWORD`. O seed fica bloqueado por padrão e não deve ser executado no banco de produção.
 
 ## Endpoints iniciais
 
@@ -70,7 +74,7 @@ Na VM, copie o arquivo de produção e crie um `.env` que não deve ser enviado 
 ```env
 POSTGRES_PASSWORD=gere-uma-senha-alfanumerica-forte
 JWT_SECRET=gere-uma-chave-aleatoria-com-64-ou-mais-caracteres
-APP_ORIGIN=*
+APP_ORIGIN=https://seu-painel-web.example.com
 PUBLIC_HOST=api.seu-dominio.com
 SMTP_HOST=smtp.email.sa-saopaulo-1.oci.oraclecloud.com
 SMTP_PORT=587
@@ -86,7 +90,6 @@ Com as portas 80 e 443 liberadas e o domínio apontado para o IP público da VM,
 
 ```bash
 docker compose -f compose.production.yml up -d --build
-docker compose -f compose.production.yml exec api npm run db:seed
 ```
 
 O contêiner da API aplica as migrations ao iniciar. O PostgreSQL não é publicado na internet; somente o Caddy recebe tráfego externo e encaminha as requisições para a API por HTTPS. Verifique a implantação em `https://api.seu-dominio.com/health`.

@@ -9,7 +9,6 @@ import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
 import PulseLine from '../components/PulseLine';
 import SegmentedToggle from '../components/SegmentedToggle';
-import InlineNotice from '../components/InlineNotice';
 import { apiRequest, ApiError, getApiUrl, setApiUrl } from '../services/api';
 import OptionCheckbox from '../components/OptionCheckbox';
 
@@ -33,7 +32,7 @@ export default function LoginScreen({ navigation }: Props) {
       setErro('Digite um e-mail válido e sua senha.');
       return;
     }
-    if (!/^https?:\/\/\S+\/api$/.test(servidor.trim().replace(/\/+$/, ''))) {
+    if (__DEV__ && !/^https?:\/\/\S+\/api$/.test(servidor.trim().replace(/\/+$/, ''))) {
       setErro('Confira o endereço da API. Exemplo: https://api.exemplo.com/api');
       setMostrarServidor(true);
       return;
@@ -100,7 +99,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <OptionCheckbox checked={manterConectado} label="Manter conectado neste aparelho" onChange={setManterConectado} disabled={loading} />
 
-          {mostrarServidor ? (
+          {__DEV__ && mostrarServidor ? (
             <AppTextInput
               label="Endereço da API (avançado)"
               value={servidor}
@@ -116,9 +115,10 @@ export default function LoginScreen({ navigation }: Props) {
           {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
           <AppButton label="Entrar" icon="login" onPress={handleLogin} loading={loading} />
-          <AppButton label={mostrarServidor ? 'Ocultar configuração avançada' : 'Configuração avançada'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
+          {__DEV__ ? (
+            <AppButton label={mostrarServidor ? 'Ocultar configuração avançada' : 'Configuração avançada'} variant="text" onPress={() => setMostrarServidor((value) => !value)} disabled={loading} style={styles.serverConfig} />
+          ) : null}
           <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} disabled={loading} style={styles.forgot} />
-          <InlineNotice message="Teste real: cuidador ana@lifeguard.test ou paciente maria@lifeguard.test. Senha: Teste123!" />
           <View style={styles.createAccount}>
             <Text style={styles.createText}>Ainda não tem conta?</Text>
             <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} disabled={loading} />

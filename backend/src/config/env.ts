@@ -20,6 +20,23 @@ const envSchema = z.object({
   SMTP_USER: optionalNonEmptyString,
   SMTP_PASSWORD: optionalNonEmptyString,
   EMAIL_FROM: optionalNonEmptyString,
+  DEMO_SEED_ENABLED: z.string().transform((value) => value === 'true').default(false),
+  DEMO_SEED_PASSWORD: optionalNonEmptyString,
+}).superRefine((value, context) => {
+  if (value.NODE_ENV === 'production' && value.JWT_SECRET.length < 64) {
+    context.addIssue({
+      code: 'custom',
+      path: ['JWT_SECRET'],
+      message: 'em produção deve ter pelo menos 64 caracteres',
+    });
+  }
+  if (value.NODE_ENV === 'production' && value.DEMO_SEED_ENABLED) {
+    context.addIssue({
+      code: 'custom',
+      path: ['DEMO_SEED_ENABLED'],
+      message: 'não pode ser ativado em produção',
+    });
+  }
 });
 
 const result = envSchema.safeParse(process.env);

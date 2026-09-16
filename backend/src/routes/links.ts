@@ -8,9 +8,18 @@ import { requireAuth } from '../middleware/auth.js';
 import { serializeUser } from '../serializers.js';
 import { sendPushToUsers } from '../services/push.js';
 import { log, safeErrorFields } from '../lib/logger.js';
+import { createRateLimit } from '../middleware/rate-limit.js';
 
 export const linksRouter = Router();
 linksRouter.use(requireAuth);
+
+const generateCodeRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  prefix: 'link-code-generate',
+  key: (req) => req.auth?.userId ?? req.ip ?? req.socket.remoteAddress ?? 'unknown',
+});
+const redeemCodeRateLimit = createRateLimit({ windowMs: 15 * 60 * 1000, max: 10, prefix: 'link-code-redeem' });
 
 linksRouter.get('/', async (req, res) => {
   if (req.auth!.type === UserType.ELDER) {
@@ -43,7 +52,7 @@ linksRouter.get('/', async (req, res) => {
   });
 });
 
-linksRouter.post('/codigo', async (req, res) => {
+linksRouter.post('/codigo', generateCodeRateLimit, async (req, res) => {
   if (req.auth!.type !== UserType.ELDER) {
     throw new HttpError(403, 'Somente o paciente pode gerar um código de vínculo.', 'ELDER_ONLY');
   }
@@ -73,7 +82,7 @@ linksRouter.post('/codigo', async (req, res) => {
   res.status(201).json({ codigo: created.code, expiraEm: created.expiresAt });
 });
 
-linksRouter.post('/', async (req, res) => {
+linksRouter.post('/', redeemCodeRateLimit, async (req, res) => {
   if (req.auth!.type !== UserType.CAREGIVER) {
     throw new HttpError(403, 'Somente cuidadores podem usar um código de vínculo.', 'CAREGIVER_ONLY');
   }

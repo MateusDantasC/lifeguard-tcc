@@ -8,6 +8,7 @@ import { HttpError } from '../lib/http-error.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertLoginAllowed, clearLoginFailures, registerLoginFailure } from '../middleware/login-rate-limit.js';
+import { createRateLimit } from '../middleware/rate-limit.js';
 import { serializeElderProfile, serializeGender, serializeUser } from '../serializers.js';
 import { assertEmailConfigured, sendEmailVerificationCode, sendPasswordResetCode } from '../services/email.js';
 import { env } from '../config/env.js';
@@ -37,6 +38,21 @@ const loginSchema = z.object({
 });
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const registerRateLimit = createRateLimit({ windowMs: 60 * 60 * 1000, max: 10, prefix: 'register' });
+const recoveryRequestRateLimit = createRateLimit({ windowMs: 15 * 60 * 1000, max: 5, prefix: 'recovery-request' });
+const recoveryConfirmRateLimit = createRateLimit({ windowMs: 15 * 60 * 1000, max: 10, prefix: 'recovery-confirm' });
+const sensitiveAccountRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  prefix: 'sensitive-account-action',
+  key: (req) => req.auth?.userId ?? req.ip ?? req.socket.remoteAddress ?? 'unknown',
+});
+const verificationRequestRateLimit = createRateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  prefix: 'verification-request',
+  key: (req) => req.auth?.userId ?? req.ip ?? req.socket.remoteAddress ?? 'unknown',
+});
 
 async function createTrackedSession(user: { id: string; type: UserType; sessionVersion: number }) {
   const session = await prisma.authSession.create({
@@ -107,6 +123,7 @@ async function findValidAccountCode(userId: string, type: AccountCodeType, code:
 const updateProfileSchema = z.object({
   nome: z.string().trim().min(2).max(100),
   email: z.email().transform((email) => email.toLowerCase()),
+  senhaAtual: z.string().max(72).optional(),
   telefone: z.string().trim().regex(/^\+[1-9]\d{6,14}$/, 'Telefone internacional inválido.').nullable().optional(),
   foto: z.string().max(750_000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/).nullable().optional(),
   genero: z.enum(['feminino', 'masculino', 'nao_binario', 'outro', 'prefiro_nao_informar']).nullable().optional(),
@@ -135,7 +152,7 @@ const genderMap = {
   prefiro_nao_informar: Gender.PREFER_NOT_TO_SAY,
 } as const;
 
-authRouter.post('/cadastro', async (req, res) => {
+authRouter.post('/cadastro', registerRateLimit, async (req, res) => {
   const input = registerSchema.parse(req.body);
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
 
@@ -421,6 +438,12 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   const profile = input.perfilIdoso;
   const emailChanged = currentUser.email !== input.email;
   if (emailChanged) {
+    assertLoginAllowed(req, currentUser.email);
+    if (!input.senhaAtual || !(await compare(input.senhaAtual, currentUser.passwordHash))) {
+      registerLoginFailure(req, currentUser.email);
+      throw new HttpError(401, 'Confirme sua senha atual para alterar o e-mail.', 'CURRENT_PASSWORD_INCORRECT');
+    }
+    clearLoginFailures(req, currentUser.email);
     await prisma.accountCode.updateMany({
       where: { userId: req.auth!.userId, type: AccountCodeType.EMAIL_VERIFICATION, usedAt: null },
       data: { usedAt: new Date() },
@@ -486,7 +509,7 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   res.json({ usuario: serializeUser(user, user.elderProfile) });
 });
 
-authRouter.post('/email/confirmacao/solicitar', requireAuth, async (req, res) => {
+authRouter.post('/email/confirmacao/solicitar', requireAuth, verificationRequestRateLimit, async (req, res) => {
   assertEmailConfigured();
   const user = await prisma.user.findUnique({
     where: { id: req.auth!.userId },
@@ -525,7 +548,7 @@ authRouter.post('/email/confirmacao/confirmar', requireAuth, async (req, res) =>
   res.json({ emailVerificado: true, mensagem: 'E-mail confirmado com sucesso.' });
 });
 
-authRouter.post('/senha/recuperacao/solicitar', async (req, res) => {
+authRouter.post('/senha/recuperacao/solicitar', recoveryRequestRateLimit, async (req, res) => {
   const input = z.object({ email: z.email().transform((email) => email.toLowerCase()) }).parse(req.body);
   assertEmailConfigured();
   const user = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true, email: true } });
@@ -533,7 +556,7 @@ authRouter.post('/senha/recuperacao/solicitar', async (req, res) => {
   res.json({ mensagem: 'Se o e-mail estiver cadastrado, enviaremos um código de recuperação.' });
 });
 
-authRouter.post('/senha/recuperacao/confirmar', async (req, res) => {
+authRouter.post('/senha/recuperacao/confirmar', recoveryConfirmRateLimit, async (req, res) => {
   const input = z.object({
     email: z.email().transform((email) => email.toLowerCase()),
     codigo: z.string().trim().regex(/^\d{6}$/, 'Informe o código de 6 dígitos.'),
@@ -555,7 +578,7 @@ authRouter.post('/senha/recuperacao/confirmar', async (req, res) => {
   res.json({ mensagem: 'Senha alterada com sucesso. Entre novamente com a nova senha.' });
 });
 
-authRouter.patch('/senha', requireAuth, async (req, res) => {
+authRouter.patch('/senha', requireAuth, sensitiveAccountRateLimit, async (req, res) => {
   const input = z.object({
     senhaAtual: z.string().min(1, 'Informe sua senha atual.'),
     novaSenha: strongPasswordSchema,
@@ -677,7 +700,7 @@ authRouter.post('/logout', requireAuth, async (req, res) => {
   res.status(204).send();
 });
 
-authRouter.delete('/me', requireAuth, async (req, res) => {
+authRouter.delete('/me', requireAuth, sensitiveAccountRateLimit, async (req, res) => {
   const input = z.object({ senha: z.string().min(1, 'Informe sua senha para excluir a conta.') }).parse(req.body);
   const user = await prisma.user.findUnique({ where: { id: req.auth!.userId } });
   if (!user) throw new HttpError(404, 'Usuário não encontrado.', 'USER_NOT_FOUND');

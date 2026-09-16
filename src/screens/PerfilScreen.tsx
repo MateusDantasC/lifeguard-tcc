@@ -51,6 +51,8 @@ export default function PerfilScreen({ navigation }: Props) {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const [senhaAtualEmail, setSenhaAtualEmail] = useState('');
+  const [mostrarSenhaEmail, setMostrarSenhaEmail] = useState(false);
   const [telefone, setTelefone] = useState(phoneNationalValue(user?.telefone));
   const [paisTelefone, setPaisTelefone] = useState<CountryCode>(phoneCountry(user?.telefone));
   const [foto, setFoto] = useState<string | null>(user?.foto ?? null);
@@ -89,6 +91,7 @@ export default function PerfilScreen({ navigation }: Props) {
 
   function resetForm() {
     setNome(user?.nome ?? ''); setEmail(user?.email ?? ''); setTelefone(phoneNationalValue(user?.telefone)); setPaisTelefone(phoneCountry(user?.telefone)); setFoto(user?.foto ?? null); setGenero(user?.genero ?? null);
+    setSenhaAtualEmail(''); setMostrarSenhaEmail(false);
     setDataNascimento(isoToBr(user?.perfilIdoso?.dataNascimento)); setTipoSanguineo(user?.perfilIdoso?.tipoSanguineo ?? '');
     setAlergias(user?.perfilIdoso?.alergias ?? ''); setMedicamentos(user?.perfilIdoso?.medicamentos ?? '');
     setCondicoesMedicas(user?.perfilIdoso?.condicoesMedicas ?? ''); setObservacoes(user?.perfilIdoso?.observacoesImportantes ?? '');
@@ -117,8 +120,13 @@ export default function PerfilScreen({ navigation }: Props) {
   }
 
   async function handleSave() {
+    const emailNormalizado = email.trim().toLowerCase();
+    const emailAlterado = emailNormalizado !== (user?.email ?? '').toLowerCase();
     if (!nome.trim() || !isValidEmail(email)) {
       setError('Confira seu nome e e-mail antes de salvar.'); return;
+    }
+    if (emailAlterado && !senhaAtualEmail) {
+      setError('Confirme sua senha atual para alterar o e-mail.'); return;
     }
     if (!genero) {
       setError('Selecione seu gênero antes de salvar.'); return;
@@ -155,7 +163,7 @@ export default function PerfilScreen({ navigation }: Props) {
     try {
       const response = await apiRequest<{ usuario: NonNullable<typeof user> }>('/auth/me', {
         method: 'PATCH',
-        body: JSON.stringify({ nome: nome.trim(), email: email.trim().toLowerCase(), telefone: telefoneInternacional, foto, genero, ...(perfilIdoso ? { perfilIdoso } : {}) }),
+        body: JSON.stringify({ nome: nome.trim(), email: emailNormalizado, ...(emailAlterado ? { senhaAtual: senhaAtualEmail } : {}), telefone: telefoneInternacional, foto, genero, ...(perfilIdoso ? { perfilIdoso } : {}) }),
       });
       updateUser(response.usuario);
       setError(''); setEditing(false);
@@ -222,6 +230,22 @@ export default function PerfilScreen({ navigation }: Props) {
           <Card style={styles.card}>{editing ? <>
             <AppTextInput label="Nome completo" value={nome} onChangeText={setNome} editable={!loading} maxLength={100} required />
             <AppTextInput label="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" editable={!loading} maxLength={254} required />
+            {email.trim().toLowerCase() !== (user?.email ?? '').toLowerCase() ? (
+              <AppTextInput
+                label="Senha atual para confirmar o novo e-mail"
+                value={senhaAtualEmail}
+                onChangeText={(value) => { setSenhaAtualEmail(value); setError(''); }}
+                secureTextEntry={!mostrarSenhaEmail}
+                rightIcon={mostrarSenhaEmail ? 'eye-off-outline' : 'eye-outline'}
+                rightIconLabel={mostrarSenhaEmail ? 'Ocultar senha' : 'Mostrar senha'}
+                onRightIconPress={() => setMostrarSenhaEmail((value) => !value)}
+                autoCapitalize="none"
+                autoComplete="current-password"
+                editable={!loading}
+                maxLength={72}
+                required
+              />
+            ) : null}
             <CountryPhoneInput
               country={paisTelefone}
               onCountryChange={(country) => { setPaisTelefone(country); setError(''); }}

@@ -1,6 +1,7 @@
 import { useConnectionStore } from '../store/connectionStore';
 
-let apiUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://152-67-44-170.sslip.io/api';
+const productionApiUrl = (process.env.EXPO_PUBLIC_API_URL ?? 'https://152-67-44-170.sslip.io/api').trim().replace(/\/+$/, '');
+let apiUrl = productionApiUrl;
 
 let accessToken: string | null = null;
 let unauthorizedHandler: (() => void) | null = null;
@@ -37,7 +38,14 @@ export function getApiUrl() {
 }
 
 export function setApiUrl(value: string) {
-  apiUrl = value.trim().replace(/\/+$/, '');
+  const normalized = value.trim().replace(/\/+$/, '');
+  if (!__DEV__ && normalized !== productionApiUrl) {
+    throw new Error('A alteração do servidor só está disponível em desenvolvimento.');
+  }
+  if (!__DEV__ && !normalized.startsWith('https://')) {
+    throw new Error('A API de produção exige HTTPS.');
+  }
+  apiUrl = normalized;
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {

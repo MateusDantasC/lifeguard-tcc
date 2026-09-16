@@ -43,6 +43,7 @@
     "typescript": "^7.0.2"
   },
   "overrides": {
+    "deepmerge-ts": "8.0.2",
     "fast-uri": "3.1.6",
     "mysql2": "3.23.1",
     "qs": "6.16.0"
