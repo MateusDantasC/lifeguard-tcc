@@ -17,7 +17,7 @@ npm install
 npm run prisma:generate
 npm run db:migrate -- --name initial
 $env:DEMO_SEED_ENABLED='true'
-$env:DEMO_SEED_PASSWORD='escolha-uma-senha-local-forte'
+$env:DEMO_SEED_PASSWORD = Read-Host 'Defina a senha local das contas de demonstração'
 npm run db:seed:build
 ```
 
