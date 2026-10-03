@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { colors, fonts } from '../theme/theme';
 import AppTextInput from '../components/AppTextInput';
 import AppButton from '../components/AppButton';
-import PulseLine from '../components/PulseLine';
+import BrandLogo from '../components/BrandLogo';
 import SegmentedToggle from '../components/SegmentedToggle';
 import { apiRequest, ApiError, getApiUrl, setApiUrl } from '../services/api';
 import OptionCheckbox from '../components/OptionCheckbox';
@@ -27,6 +27,7 @@ export default function LoginScreen({ navigation }: Props) {
   const setSession = useAuthStore((state) => state.setSession);
 
   async function handleLogin() {
+    if (loading) return;
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail) || !senha) {
       setErro('Digite um e-mail válido e sua senha.');
@@ -64,9 +65,7 @@ export default function LoginScreen({ navigation }: Props) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           <View style={styles.brand}>
-            <Text style={styles.titulo}>LifeGuard</Text>
-            <Text style={styles.tagline}>Cuidado presente, mesmo à distância</Text>
-            <PulseLine variant="divider" style={styles.pulse} />
+            <BrandLogo />
           </View>
 
           <Text style={styles.sectionLabel}>Como você usa o LifeGuard?</Text>

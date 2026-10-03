@@ -12,6 +12,16 @@ const tokenSchema = z.string().trim().max(300).regex(/^(ExponentPushToken|ExpoPu
 export const notificationsRouter = Router();
 notificationsRouter.use(requireAuth);
 
+notificationsRouter.get('/entregas', async (req, res) => {
+  const deliveries = await prisma.pushDelivery.findMany({
+    where: { userId: req.auth!.userId }, orderBy: { createdAt: 'desc' }, take: 50,
+    select: { id: true, status: true, createdAt: true, checkedAt: true },
+  });
+  res.json({ entregas: deliveries.map((item) => ({
+    id: item.id, status: item.status, enviadaEm: item.createdAt, verificadaEm: item.checkedAt,
+  })) });
+});
+
 const pushTestRateLimit = createRateLimit({
   windowMs: 5 * 60 * 1000,
   max: 5,

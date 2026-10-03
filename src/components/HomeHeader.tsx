@@ -1,6 +1,7 @@
 import { Image, View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme/theme';
+import BrandLogo from './BrandLogo';
 
 type Props = {
   title: string;
@@ -16,7 +17,7 @@ export default function HomeHeader({ title, subtitle, onProfile, onNotifications
   return (
     <View style={styles.headerBlock}>
       <View style={styles.brandRow}>
-        <View style={styles.signal}><View style={styles.signalDot} /><View style={styles.signalLine} /></View>
+        <BrandLogo compact />
         <Text accessibilityRole="header" style={styles.brandLabel}>LIFEGUARD · {accountType === 'cuidador' ? 'REDE DE CUIDADO' : 'MEU CUIDADO'}</Text>
       </View>
       <View style={styles.wrapper}>
@@ -48,7 +49,7 @@ const styles = StyleSheet.create({
   signal: { width: 28, height: 8, flexDirection: 'row', alignItems: 'center' },
   signalDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.coral },
   signalLine: { height: 2, flex: 1, backgroundColor: colors.coral },
-  brandLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1.4, color: colors.coral },
+  brandLabel: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1, color: colors.coral },
   wrapper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   copy: { flex: 1 },
   title: { fontFamily: fonts.display, fontSize: 27, color: colors.ink },

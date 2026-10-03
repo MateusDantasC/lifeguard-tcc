@@ -96,6 +96,13 @@ linksRouter.post('/', redeemCodeRateLimit, async (req, res) => {
       throw new HttpError(400, 'Não é possível vincular a própria conta.', 'SELF_LINK');
     }
 
+    // Claim atomically: two requests must never redeem the same code.
+    const claimed = await tx.elderLinkCode.updateMany({
+      where: { id: code.id, usedAt: null, expiresAt: { gt: new Date() } },
+      data: { usedAt: new Date() },
+    });
+    if (claimed.count !== 1) throw new HttpError(400, 'Código inválido ou expirado.', 'INVALID_LINK_CODE');
+
     const saved = await tx.caregiverElderLink.upsert({
       where: {
         caregiverId_elderId: { caregiverId: req.auth!.userId, elderId: code.elderId },
@@ -104,7 +111,6 @@ linksRouter.post('/', redeemCodeRateLimit, async (req, res) => {
       update: { status: LinkStatus.ACTIVE },
       include: { elder: true },
     });
-    await tx.elderLinkCode.update({ where: { id: code.id }, data: { usedAt: new Date() } });
     return saved;
   });
 

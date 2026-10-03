@@ -8,6 +8,8 @@ import BackHeader from '../components/BackHeader';
 import Card from '../components/Card';
 import InlineNotice from '../components/InlineNotice';
 import { colors, fonts } from '../theme/theme';
+import BrandLogo from '../components/BrandLogo';
+import { releaseNotes } from '../content/releaseNotes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AjudaSobre'>;
 
@@ -25,6 +27,11 @@ export default function AjudaSobreScreen({ navigation }: Props) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <BackHeader title="Ajuda e sobre" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.container}>
+        <Text accessibilityRole="header" style={styles.title}>Novidades desta atualização</Text>
+        <Card style={styles.questionCard}>
+          <Text style={styles.question}>{releaseNotes.edition}</Text>
+          {releaseNotes.items.map((item) => <Text key={item} style={styles.releaseItem}>• {item}</Text>)}
+        </Card>
         <InlineNotice tone="warning" message="Em uma emergência médica, procure atendimento imediatamente ou ligue para o SAMU pelo número 192." />
         <Text accessibilityRole="header" style={styles.title}>Perguntas frequentes</Text>
         {questions.map(([question, answer], index) => (
@@ -41,8 +48,7 @@ export default function AjudaSobreScreen({ navigation }: Props) {
         </Card>
 
         <View style={styles.about}>
-          <MaterialCommunityIcons accessible={false} name="heart-pulse" size={34} color={colors.coral} />
-          <Text style={styles.appName}>LifeGuard</Text>
+          <BrandLogo />
           <Text style={styles.version}>Versão {version}</Text>
           <Text style={styles.academic}>Protótipo acadêmico em desenvolvimento para o Trabalho de Conclusão de Curso.</Text>
         </View>
@@ -56,6 +62,7 @@ function LegalLink({ label, icon, onPress, last }: { label: string; icon: keyof 
 }
 
 const styles = StyleSheet.create({
+  releaseItem: { fontFamily: fonts.longText, fontSize: 14, lineHeight: 22, color: colors.textSecondary, marginTop: 10 },
   safe: { flex: 1, backgroundColor: colors.sand }, container: { paddingHorizontal: 20, paddingBottom: 44 },
   title: { fontFamily: fonts.display, fontSize: 22, color: colors.ink, marginTop: 24, marginBottom: 12 },
   questionCard: { marginBottom: 10 }, questionHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

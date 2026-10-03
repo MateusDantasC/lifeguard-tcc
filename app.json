@@ -3,9 +3,9 @@
     "name": "LifeGuard",
     "slug": "lifeguard-tcc",
     "scheme": "lifeguard",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "orientation": "portrait",
-    "icon": "./assets/lifeguard-icon.png",
+    "icon": "./assets/brand/app-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
@@ -14,18 +14,18 @@
     },
     "android": {
       "package": "com.mdantasc.lifeguard",
-      "versionCode": 10,
+      "versionCode": 11,
       "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/lifeguard-mark.png",
-        "backgroundColor": "#1B3A3F"
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "backgroundColor": "#26343D"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/lifeguard-icon.png"
+      "favicon": "./assets/brand/app-icon.png"
     },
     "plugins": [
       "expo-font",
@@ -46,15 +46,15 @@
       [
         "expo-notifications",
         {
-          "color": "#E86F51",
+          "color": "#1976A8",
           "defaultChannel": "alertas"
         }
       ],
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F6F1E7",
-          "image": "./assets/lifeguard-mark.png",
+          "backgroundColor": "#26343D",
+          "image": "./assets/brand/splash.png",
           "imageWidth": 180,
           "resizeMode": "contain"
         }

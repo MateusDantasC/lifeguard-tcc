@@ -29,7 +29,7 @@ async function configureAndroidChannel() {
     description: 'Avisos importantes sobre pacientes e vínculos de cuidado.',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 180, 250],
-    lightColor: '#E86F51',
+    lightColor: '#35B8C8',
     sound: 'default',
   });
 }

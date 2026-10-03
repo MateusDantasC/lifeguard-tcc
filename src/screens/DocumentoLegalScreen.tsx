@@ -71,5 +71,5 @@ const styles = StyleSheet.create({
   number: { width: 26, fontFamily: fonts.display, fontSize: 15, color: colors.coral },
   sectionCopy: { flex: 1 },
   sectionTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, marginBottom: 5 },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.textSecondary },
+  body: { fontFamily: fonts.longText, fontSize: 15, lineHeight: 23, color: colors.textSecondary },
 });

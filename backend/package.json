@@ -12,6 +12,7 @@
     "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test dist/src/domain/*.test.js dist/src/middleware/*.test.js dist/src/services/*.test.js",
+    "test:integration": "npm run build && node --test dist/src/integration/*.test.js",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -44,7 +45,7 @@
   },
   "overrides": {
     "deepmerge-ts": "8.0.2",
-    "fast-uri": "3.1.6",
+    "fast-uri": "3.1.7",
     "mysql2": "3.23.1",
     "qs": "6.16.0"
   }

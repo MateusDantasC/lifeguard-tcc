@@ -51,3 +51,4 @@ backend/src/generated/prisma/
 # generated native folders
 /ios
 /android
+/tmp/

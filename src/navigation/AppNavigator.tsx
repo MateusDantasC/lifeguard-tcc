@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Notifications from 'expo-notifications';
+import { useNotificationResponse } from '../services/useNotificationResponse';
 import type { RootStackParamList } from './types';
 import LoginScreen from '../screens/LoginScreen';
 import CadastroScreen from '../screens/CadastroScreen';
@@ -33,7 +34,7 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 export default function AppNavigator() {
   const user = useAuthStore((state) => state.user);
   const pendingResponse = useRef<Notifications.NotificationResponse | null>(null);
-  const notificationResponse = Notifications.useLastNotificationResponse();
+  const notificationResponse = useNotificationResponse();
 
   const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
     if (!navigationRef.isReady() || !user) {

@@ -2,12 +2,16 @@ import { app } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './lib/prisma.js';
 import { log } from './lib/logger.js';
+import { startPushReceiptWorker } from './services/push-receipts.js';
+
+const stopPushReceiptWorker = startPushReceiptWorker();
 
 const server = app.listen(env.PORT, '0.0.0.0', () => {
   log('info', 'server_started', { port: env.PORT, environment: env.NODE_ENV });
 });
 
 async function shutdown(signal: string) {
+  stopPushReceiptWorker();
   log('info', 'server_shutdown', { signal });
   server.close(async () => {
     await prisma.$disconnect();
