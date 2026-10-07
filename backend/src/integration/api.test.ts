@@ -13,6 +13,9 @@ test('contas, vínculos, isolamento de pacientes e revogação em banco de teste
   process.env.SMTP_PASSWORD = '';
   const { app } = await import('../app.js');
   const { prisma } = await import('../lib/prisma.js');
+  const { env } = await import('../config/env.js');
+  const { AccountCodeType } = await import('../generated/prisma/enums.js');
+  const { hashAccountCode } = await import('../domain/account-codes.js');
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const address = server.address();
@@ -89,6 +92,31 @@ test('contas, vínculos, isolamento de pacientes e revogação em banco de teste
     assert.equal((await prisma.pushToken.findUniqueOrThrow({ where: { id: renewed.id } })).active, true);
     assert.equal(await prisma.pushDelivery.count({ where: { userId: patient.usuario.id, status: 'failed' } }), 2);
     assert.equal((await request('/notificacoes/entregas', 'GET', loser.token)).data.entregas.length, 0);
+
+    const verificationCode = '654321';
+    await prisma.accountCode.create({ data: {
+      userId: patient.usuario.id,
+      type: AccountCodeType.EMAIL_VERIFICATION,
+      codeHash: hashAccountCode(verificationCode, env.JWT_SECRET),
+      expiresAt: new Date(Date.now() + 15 * 60_000),
+    } });
+    const wrongVerification = await request('/auth/email/confirmacao/confirmar', 'POST', revoked.data.token, { codigo: '000000' });
+    assert.equal(wrongVerification.status, 400);
+    const correctVerification = await request('/auth/email/confirmacao/confirmar', 'POST', revoked.data.token, { codigo: verificationCode });
+    assert.equal(correctVerification.status, 200);
+
+    const recoveryCode = '765432';
+    await prisma.accountCode.create({ data: {
+      userId: patient.usuario.id,
+      type: AccountCodeType.PASSWORD_RESET,
+      codeHash: hashAccountCode(recoveryCode, env.JWT_SECRET),
+      expiresAt: new Date(Date.now() + 15 * 60_000),
+    } });
+    const unchangedPassword = await request('/auth/senha/recuperacao/confirmar', 'POST', undefined, {
+      email: patient.email, codigo: recoveryCode, novaSenha: senha,
+    });
+    assert.equal(unchangedPassword.status, 400);
+    assert.equal(unchangedPassword.data.codigo, 'PASSWORD_UNCHANGED');
   } finally {
     // Delete only accounts created by this test, on the guarded test database.
     await prisma.user.deleteMany({ where: { id: { in: ids } } });

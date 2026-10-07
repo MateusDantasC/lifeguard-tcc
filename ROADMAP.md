@@ -2,6 +2,46 @@
 
 Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionadas ao ESP32 e ao simulador ficam deliberadamente para o final.
 
+## Próxima fila priorizada antes do ESP32
+
+Situação revisada em 06/10/2026. Relatos antigos devem ser reproduzidos no APK atual antes de alterar o código.
+
+### P0 — Corrigir e proteger os fluxos de conta
+
+- [Implementado; validação final pendente] Confirmar que um código correto funciona após uma tentativa errada; o backend permite cinco tentativas e agora há teste de regressão.
+- [Implementado; validação final pendente] Impedir também na recuperação de senha por código que a nova senha seja igual à senha já cadastrada.
+- [Implementado; validação final pendente] Manter a escolha Paciente/Cuidador ao navegar do login para o cadastro e ao voltar para o login.
+- [Implementado; validação final pendente] Corrigir o defeito visual do campo “Li e concordo com os Termos de Uso e com a Política de Privacidade”; ainda conferir no APK com tela pequena e fonte ampliada.
+- Executar testes automatizados dos quatro fluxos acima e publicar a correção na API/EAS Update.
+
+### P1 — Fechar autenticação e segurança antes do hardware
+
+- Adicionar entrada e cadastro com Google usando OAuth/OIDC, vinculando com segurança contas que já usem o mesmo e-mail e preservando o tipo Paciente/Cuidador.
+- Configurar os clientes Android/Web no Google, validar assinatura do APK e definir o comportamento para conta Google sem tipo escolhido.
+- Fazer a rodada completa em dois celulares: cadastro, confirmação de e-mail, login, recuperação, sessões, vínculo, notificações, offline e exclusão de conta.
+- Confirmar no ambiente de produção a rotação das credenciais, os backups restauráveis, os timers e a ausência de segredos versionados.
+
+### P2 — Preparar a integração sem conectar fisicamente o ESP32
+
+- Definir o contrato das leituras: identificador do dispositivo, paciente, batimentos, temperatura, horário, sequência e qualidade do sensor.
+- Criar autenticação exclusiva do dispositivo, endpoint de ingestão e pareamento seguro com o paciente.
+- Implementar validação, idempotência, limite de requisições e registro do último contato do dispositivo.
+- Concluir no backend a regra de leituras anormais consecutivas, descarte de picos/perda de contato, intervalo entre alertas e aviso de normalização.
+- Cobrir o fluxo completo com simulador e testes automatizados antes de aceitar dados reais.
+
+### P3 — Distribuição e apresentação
+
+- Validar EAS Update e gerar um APK-base definitivo somente quando houver mudança nativa.
+- Automatizar deploy seguro da API e publicação das atualizações EAS.
+- Criar página oficial de download com versão, notas e instruções de instalação.
+- Adicionar monitoramento de falhas do aplicativo e preparar roteiro/material de demonstração.
+
+### P4 — Conectar e calibrar o ESP32
+
+- Gravar a configuração/credencial no ESP32 e pareá-lo a uma conta de teste.
+- Validar envio, reconexão, relógio, duplicidade e funcionamento contínuo.
+- Calibrar filtros e limites com dados reais, documentando que o protótipo não é um dispositivo médico validado.
+
 ## Concluído sem hardware
 
 - Alteração de senha para usuários autenticados.
@@ -30,15 +70,15 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 - [Concluído] Backup automático diário, retenção de 14 dias e teste semanal de restauração do PostgreSQL.
 - [Concluído] Monitoramento interno e externo da API, do PostgreSQL e do uso de disco da VM, com aviso sem duplicação no GitHub.
 - [Concluído] Registro estruturado de requisições e erros, com correlação e rotação, sem armazenar dados sensíveis.
-- Relatórios de entrega das notificações push e limpeza de tokens inválidos.
+- [Concluído] Relatórios de entrega das notificações push e limpeza de tokens inválidos.
 - Ambientes separados de teste e produção.
 - Domínio próprio para a API.
 
 ## 4. Qualidade, distribuição e apresentação
 
-- Testes automatizados das rotas, autenticação, vínculos e permissões.
+- [Concluído] Testes automatizados iniciais das rotas, autenticação, vínculos e permissões.
 - Testes de interface e roteiro de teste com dois ou mais celulares.
-- Integração contínua para executar verificações a cada envio ao GitHub.
+- [Concluído] Integração contínua para executar verificações a cada envio ao GitHub.
 - Automação segura do deploy da API e das atualizações EAS.
 - Site oficial com download do APK, versão e instruções de instalação.
 - Notas da atualização no aplicativo.

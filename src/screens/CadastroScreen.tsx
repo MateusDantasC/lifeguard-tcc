@@ -21,7 +21,7 @@ import { isStrongPassword, isValidEmail, passwordValidationMessage } from '../ut
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cadastro'>;
 
-export default function CadastroScreen({ navigation }: Props) {
+export default function CadastroScreen({ navigation, route }: Props) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -31,7 +31,7 @@ export default function CadastroScreen({ navigation }: Props) {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
-  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
+  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>(route.params?.tipoConta ?? 'idoso');
   const [aceitouDocumentos, setAceitouDocumentos] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const [erro, setErro] = useState('');
@@ -171,7 +171,7 @@ export default function CadastroScreen({ navigation }: Props) {
         {erro ? <Text accessibilityRole="alert" style={styles.erro}>{erro}</Text> : null}
 
         <AppButton label="Criar minha conta" icon="account-plus-outline" onPress={handleCadastro} loading={loading} />
-        <AppButton label="Já tenho conta" variant="text" onPress={() => navigation.navigate('Login')} disabled={loading} />
+        <AppButton label="Já tenho conta" variant="text" onPress={() => navigation.navigate('Login', { tipoConta })} disabled={loading} />
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

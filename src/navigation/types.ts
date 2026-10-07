@@ -1,6 +1,6 @@
 export type RootStackParamList = {
-  Login: undefined;
-  Cadastro: undefined;
+  Login: { tipoConta?: 'idoso' | 'cuidador' } | undefined;
+  Cadastro: { tipoConta?: 'idoso' | 'cuidador' } | undefined;
   RecuperarSenha: undefined;
   DocumentoLegal: { tipo: 'termos' | 'privacidade' };
   HomeIdoso: undefined;

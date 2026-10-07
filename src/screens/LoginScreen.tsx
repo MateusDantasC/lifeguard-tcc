@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,17 +14,21 @@ import OptionCheckbox from '../components/OptionCheckbox';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({ navigation, route }: Props) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>('idoso');
+  const [tipoConta, setTipoConta] = useState<'idoso' | 'cuidador'>(route.params?.tipoConta ?? 'idoso');
   const [mostrarServidor, setMostrarServidor] = useState(false);
   const [servidor, setServidor] = useState(getApiUrl());
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const [manterConectado, setManterConectado] = useState(true);
   const setSession = useAuthStore((state) => state.setSession);
+
+  useEffect(() => {
+    if (route.params?.tipoConta) setTipoConta(route.params.tipoConta);
+  }, [route.params?.tipoConta]);
 
   async function handleLogin() {
     if (loading) return;
@@ -120,7 +124,7 @@ export default function LoginScreen({ navigation }: Props) {
           <AppButton label="Esqueci minha senha" variant="text" onPress={() => navigation.navigate('RecuperarSenha')} disabled={loading} style={styles.forgot} />
           <View style={styles.createAccount}>
             <Text style={styles.createText}>Ainda não tem conta?</Text>
-            <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro')} disabled={loading} />
+            <AppButton label="Criar conta" variant="text" onPress={() => navigation.navigate('Cadastro', { tipoConta })} disabled={loading} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,8 +1,9 @@
 export const releaseNotes = {
-  edition: 'Setembro de 2026',
+  edition: 'Outubro de 2026',
   items: [
-    'Nova identidade LifeGuard: logotipo oficial, cores e tipografia do brand book.',
-    'Navegação, perfis e acompanhamento mantêm os mesmos fluxos de cuidado.',
-    'Melhorias de estabilidade e proteção contra envios repetidos no login.',
+    'Cadastro mantém a opção Paciente ou Cuidador escolhida no login.',
+    'Recuperação de senha impede reutilizar a senha atual.',
+    'Nova tentativa correta de confirmação funciona após um código incorreto.',
+    'Aceite dos Termos de Uso e da Política de Privacidade com alinhamento corrigido.',
   ],
 };

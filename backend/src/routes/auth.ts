@@ -562,15 +562,19 @@ authRouter.post('/senha/recuperacao/confirmar', recoveryConfirmRateLimit, async 
     codigo: z.string().trim().regex(/^\d{6}$/, 'Informe o código de 6 dígitos.'),
     novaSenha: strongPasswordSchema,
   }).parse(req.body);
-  const user = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+  const user = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true, passwordHash: true } });
   if (!user) throw new HttpError(400, 'Código inválido ou expirado. Solicite um novo código.', 'INVALID_OR_EXPIRED_CODE');
   const record = await findValidAccountCode(user.id, AccountCodeType.PASSWORD_RESET, input.codigo);
+  if (await compare(input.novaSenha, user.passwordHash)) {
+    throw new HttpError(400, 'A nova senha deve ser diferente da senha atual.', 'PASSWORD_UNCHANGED');
+  }
   const now = new Date();
+  const newPasswordHash = await hash(input.novaSenha, 12);
   await prisma.$transaction([
     prisma.accountCode.update({ where: { id: record.id }, data: { usedAt: now } }),
     prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: await hash(input.novaSenha, 12), sessionVersion: { increment: 1 } },
+      data: { passwordHash: newPasswordHash, sessionVersion: { increment: 1 } },
     }),
     prisma.authSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: now } }),
     prisma.pushToken.updateMany({ where: { userId: user.id, active: true }, data: { active: false } }),
