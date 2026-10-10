@@ -18,6 +18,7 @@ import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
+import BrandIcon from '../../components/BrandIcon';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
 
@@ -95,14 +96,16 @@ export default function HomeIdosoScreen({ navigation }: Props) {
         <View style={styles.grid}>
           {acessos.map((item) => (
             <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} style={({ pressed }) => [styles.gridItem, pressed && styles.pressed]} onPress={item.onPress}>
-                <MaterialCommunityIcons name={item.icon} size={26} color={colors.ink} />
+                {item.icon === 'account-group' ? <BrandIcon name="care" size={32} /> :
+                  item.icon === 'tune-variant' ? <BrandIcon name="shield" size={32} /> :
+                  <MaterialCommunityIcons accessible={false} name={item.icon} size={28} color={colors.inkSoft} />}
                 <Text style={styles.gridLabel}>{item.label}</Text>
             </Pressable>
           ))}
         </View>
 
         <Pressable accessibilityRole="button" accessibilityLabel="Emergência, ligar para o SAMU" style={({ pressed }) => [styles.sos, pressed && styles.pressed]} onPress={handleSos}>
-          <MaterialCommunityIcons name="alert-octagon-outline" size={24} color={colors.sand} />
+          <BrandIcon name="heart" size={26} color={colors.white} />
           <Text style={styles.sosLabel}>Emergência (SOS)</Text>
         </Pressable>
       </ScrollView>
@@ -122,6 +125,6 @@ const styles = StyleSheet.create({
   gridItem: { width: '47%', flexGrow: 1, minHeight: 112, backgroundColor: colors.cardBg, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 9 },
   gridLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.textPrimary, textAlign: 'center' },
   pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
-  sos: { flexDirection: 'row', backgroundColor: colors.ember, borderRadius: radii.lg, minHeight: 60, alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 16 },
+  sos: { flexDirection: 'row', backgroundColor: colors.inkSoft, borderRadius: radii.lg, minHeight: 60, alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 16 },
   sosLabel: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.sand },
 });

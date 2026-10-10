@@ -18,5 +18,12 @@ Estados de alerta, atenção e normal continuam com cores semânticas e rótulos
 Não usar turquesa como texto pequeno sobre branco: o contraste é insuficiente.
 Novas telas devem importar tokens de src/theme/theme.ts e os componentes comuns.
 
+Em 09/10/2026, elementos da página 3 foram extraídos para assets/brand/elements
+pelo script scripts/extract-brand-elements.py. BrandIcon centraliza coração,
+cuidado e escudo. PulseLine utiliza o traçado original. SOS e ícones de sinais
+vitais usam #1976A8. Cores semânticas de erros e estados clínicos são preservadas.
+O PDF não contém termômetro, dispositivo ou gráfico de histórico; substituir
+esses ícones depende dos arquivos complementares da identidade visual.
+
 A mudança de ícone e splash exige APK 1.8.0 (versionCode 11). Atualizações JS
 compatíveis posteriores podem seguir pelo EAS Update no runtime 1.8.0.

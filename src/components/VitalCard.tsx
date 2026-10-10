@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Card from './Card';
 import PulseLine from './PulseLine';
+import BrandIcon from './BrandIcon';
 import { colors, fonts } from '../theme/theme';
 
 type Props = {
@@ -21,7 +22,8 @@ export default function VitalCard({ icon, iconColor, value, unit, label, showPul
           <PulseLine variant="background" animated />
         </View>
       )}
-      <MaterialCommunityIcons accessible={false} name={icon} size={28} color={iconColor} />
+      {icon === 'heart-pulse' ? <BrandIcon name="heart" color={colors.inkSoft} /> :
+        <MaterialCommunityIcons accessible={false} name={icon} size={28} color={colors.inkSoft} />}
       <Text style={styles.value}>
         {value} <Text style={styles.unit}>{unit}</Text>
       </Text>

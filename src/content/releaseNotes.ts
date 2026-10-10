@@ -1,6 +1,8 @@
 export const releaseNotes = {
   edition: 'Outubro de 2026',
   items: [
+    'Elementos gráficos originais da marca nos cartões de batimentos, cuidadores, limites e SOS.',
+    'Botão SOS e ícones de sinais vitais em azul da identidade visual.',
     'Cadastro mantém a opção Paciente ou Cuidador escolhida no login.',
     'Recuperação de senha impede reutilizar a senha atual.',
     'Nova tentativa correta de confirmação funciona após um código incorreto.',
