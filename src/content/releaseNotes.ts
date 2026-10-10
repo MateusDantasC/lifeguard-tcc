@@ -1,6 +1,7 @@
 export const releaseNotes = {
   edition: 'Outubro de 2026',
   items: [
+    'Histórico responsivo para paciente e cuidador, sem gráfico ultrapassando o cartão.',
     'Ícones próprios em traço para batimentos, temperatura, histórico, dispositivo, cuidadores, limites e SOS.',
     'Elementos gráficos originais da marca nos cartões de batimentos, cuidadores, limites e SOS.',
     'Botão SOS e ícones de sinais vitais em azul da identidade visual.',

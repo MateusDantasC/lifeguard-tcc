@@ -4,7 +4,10 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 ## Próxima fila priorizada antes do ESP32
 
-Situação revisada em 06/10/2026. Relatos antigos devem ser reproduzidos no APK atual antes de alterar o código.
+Situação revisada em 09/10/2026. Relatos antigos devem ser reproduzidos no APK atual antes de alterar o código.
+
+- [Implementado em 09/10; conferir nos aparelhos] Histórico compartilhado entre paciente e cuidador mede a largura interna do cartão; cabeçalho quebra linha e rótulos do gráfico se adaptam ao espaço. Média descreve as leituras exibidas (a API retorna as últimas 100, não necessariamente 24 horas).
+- [Próxima etapa] Google: configuração local Firebase ainda sem clientes OAuth. Configurar Android/Web e certificado do APK antes de disponibilizar o botão; integração nativa exigirá novo APK-base. Não vincular contas existentes automaticamente apenas por coincidência de e-mail.
 
 ### P0 — Corrigir e proteger os fluxos de conta
 

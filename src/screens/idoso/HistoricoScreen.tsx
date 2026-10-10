@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryScatter } from 'victory-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import LifeGuardIcon from '../../components/LifeGuardIcon';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors, fonts, radii } from '../../theme/theme';
@@ -32,6 +32,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
   const [erro, setErro] = useState('');
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [refreshing, setRefreshing] = useState(false);
+  const [chartWidth, setChartWidth] = useState(0);
 
   const loadHistory = useCallback(async (refresh = false) => {
     if (!elderId) return;
@@ -67,6 +68,9 @@ export default function HistoricoScreen({ navigation, route }: Props) {
   const picosFiltrados = picos.filter((pico) => pico.tipo === metrica);
   const values = pontos.map((point) => point.y);
   const media = values.length ? (values.reduce((total, value) => total + value, 0) / values.length).toFixed(metrica === 'batimento' ? 0 : 1) : '--';
+  const tickCount = Math.min(pontos.length, Math.max(2, Math.floor(chartWidth / 65)));
+  const ticks = Array.from({ length: tickCount }, (_, index) =>
+    tickCount === 1 ? 0 : Math.round(index * (pontos.length - 1) / (tickCount - 1)));
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -88,10 +92,11 @@ export default function HistoricoScreen({ navigation, route }: Props) {
 
         <Card style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <View><Text style={styles.chartLabel}>Média nas últimas 24 horas</Text><Text style={styles.average}>{media} <Text style={styles.unit}>{unidade}</Text></Text></View>
+            <View style={styles.summary}><Text style={styles.chartLabel}>Média das leituras exibidas</Text><Text style={styles.average}>{media} <Text style={styles.unit}>{unidade}</Text></Text></View>
             <View style={styles.range}><Text style={styles.rangeText}>{values.length ? `mín. ${Math.min(...values)} · máx. ${Math.max(...values)}` : 'sem dados'}</Text></View>
           </View>
-          <VictoryChart height={200} padding={{ top: 10, bottom: 30, left: 40, right: 20 }}>
+          <View style={styles.chartViewport} onLayout={({ nativeEvent }) => setChartWidth(Math.floor(nativeEvent.layout.width))}>
+          {pontos.length === 0 ? <Text style={styles.noReadings}>Ainda não há leituras válidas para esta métrica.</Text> : chartWidth > 0 ? <VictoryChart width={chartWidth} height={200} padding={{ top: 16, bottom: 30, left: 44, right: 16 }} domainPadding={{ x: 8, y: 12 }}>
             <VictoryAxis
               style={{
                 axis: { stroke: colors.border },
@@ -99,6 +104,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
                 grid: { stroke: 'transparent' },
               }}
               tickFormat={(t) => `${t + 1}`}
+              tickValues={ticks}
             />
             <VictoryAxis
               dependentAxis
@@ -114,7 +120,9 @@ export default function HistoricoScreen({ navigation, route }: Props) {
               style={{ data: { stroke: colors.coral, strokeWidth: 2.5 } }}
             />
             <VictoryScatter data={pontos} size={3} style={{ data: { fill: colors.ink } }} />
-          </VictoryChart>
+          </VictoryChart> : null}
+          </View>
+          {pontos.length > 0 ? <Text style={styles.chartCaption}>Leituras em ordem cronológica · {pontos.length} registros</Text> : null}
         </Card>
 
         <Text style={styles.sectionTitle}>Picos registrados</Text>
@@ -122,10 +130,10 @@ export default function HistoricoScreen({ navigation, route }: Props) {
         {picosFiltrados.length === 0 ? <EmptyState icon="chart-line" title="Nenhum pico registrado" message="Os alertas reais aparecerão aqui quando uma leitura válida ultrapassar os limites." /> : picosFiltrados.map((pico) => (
           <Card key={pico.id} style={styles.picoCard}>
             <View style={styles.picoIcon}>
-              <MaterialCommunityIcons
+              <LifeGuardIcon
                 name={pico.tipo === 'batimento' ? 'heart-pulse' : 'thermometer'}
                 size={20}
-                color={pico.tipo === 'batimento' ? colors.ember : colors.amber}
+                color={colors.inkSoft}
               />
             </View>
             <View style={styles.picoInfo}>
@@ -145,12 +153,16 @@ export default function HistoricoScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand },
   container: { paddingHorizontal: 20, paddingBottom: 40 },
-  chartCard: { marginBottom: 24, paddingBottom: 4 },
-  chartHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 },
+  chartCard: { marginBottom: 24, paddingBottom: 16, minWidth: 0 },
+  chartViewport: { width: '100%', overflow: 'hidden' },
+  chartHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 },
+  summary: { flexGrow: 1, flexShrink: 1, flexBasis: 150, minWidth: 0 },
+  chartCaption: { fontFamily: fonts.body, fontSize: 11, color: colors.textSecondary, textAlign: 'center' },
+  noReadings: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingVertical: 36 },
   chartLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
   average: { fontFamily: fonts.display, fontSize: 28, color: colors.ink, marginTop: 3 },
   unit: { fontFamily: fonts.body, fontSize: 13, color: colors.textSecondary },
-  range: { backgroundColor: colors.sand, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 6 },
+  range: { maxWidth: '100%', flexShrink: 1, backgroundColor: colors.sand, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 6 },
   rangeText: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
   sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.ink, marginBottom: 12 },
   picoCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingVertical: 14 },

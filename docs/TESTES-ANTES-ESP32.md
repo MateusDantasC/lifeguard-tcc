@@ -39,6 +39,10 @@ Use contas de teste e registre versão do APK, modelo do aparelho e resultado.
 13. Remover vínculo: o antigo cuidador não deve mais acessar o perfil/leituras.
 14. Desligar internet: conferir aviso, cache da própria conta e botão de tentar novamente.
 15. Exportar dados pelo compartilhamento nativo; excluir apenas contas de teste.
+16. Abrir Histórico como paciente e pelo perfil do paciente na conta cuidador.
+    Alternar batimento/temperatura, girar a tela e ampliar a fonte: gráfico, média
+    e limites devem ficar dentro do cartão. Conferir sem dados, uma leitura e
+    100 leituras (somente em ambiente de teste, sem inserir dados na produção).
 
 ## Infraestrutura ainda precisa de validação
 
