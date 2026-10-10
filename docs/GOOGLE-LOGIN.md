@@ -3,6 +3,29 @@
 Estado confirmado em 09/10/2026: clientes criados no Google Cloud, mas login Google
 ainda NÃO implementado no aplicativo ou na API. Nenhuma alteração na VM nesta etapa.
 
+## Etapa local concluída — validação de identidade
+
+Implementado `backend/src/services/google-identity.ts`, fábrica
+`createGoogleIdentityVerifier({ webClientId, androidClientId })` que devolve uma
+função assíncrona de validação de ID token. Retorna somente `{ subject, email }`.
+Não importa ambiente/banco e NÃO está conectada a qualquer rota HTTP ainda.
+
+- JWKS fixo do Google, cache, timeout e restrição a RS256.
+- Issuer, audience único Web, expiração, emissão recente (até 1 hora), subject e
+  e-mail verificado obrigatórios. Valida `azp` quando presente contra Web/Android.
+- Rejeita tokens inválidos com mensagem genérica, sem registrar tokens/claims.
+- Sem audience configurado, falha fechada (503); timeout/falha de rede também 503.
+- `keys` é injeção somente para teste offline e nunca deve vir de uma requisição.
+- 23 testes novos com chaves efêmeras e assinaturas reais; suíte backend completa:
+  **37/37 aprovados** com `cd backend; npm test` em 09/10/2026.
+- Sem alterações no banco, dependências, APK, EAS ou VM. Código salvo para integração.
+
+Próxima sessão: conectar esse verificador à configuração de ambiente do servidor,
+implementar vínculo Google por `sub`, rotas com rate limit e testes de integração.
+Depois integrar SDK nativo/telas. Definir proteção de nonce/desafio se suportada
+pelo fluxo escolhido; validar identidade isoladamente não impede replay de token
+roubado, não comprova posse de conta LifeGuard e não autoriza vincular por e-mail.
+
 ## Configuração pública (não são segredos)
 
 - Projeto: `lifeguard-b88f9` (LifeGuard).
@@ -24,8 +47,8 @@ ainda NÃO implementado no aplicativo ou na API. Nenhuma alteração na VM nesta
 1. Consultar documentação SDK 54 e biblioteca Google Sign-In antes de implementar.
 2. Integrar login nativo usando cliente Web como audience; pedir somente identidade
    básica, sem permissões Gmail/Drive. Evitar armazenar ou registrar tokens Google.
-3. API: validar assinatura/JWKS, issuer, audience, expiração, sub e e-mail verificado;
-   emitir a sessão revogável LifeGuard existente, com limite de requisições.
+3. API: usar o verificador já implementado; emitir a sessão revogável LifeGuard
+   existente somente após resolver o vínculo da conta, com limite de requisições.
 4. Persistir vínculo por subject (`sub`) Google único. Não ligar uma conta existente
    apenas porque o e-mail coincide: exigir autenticação na conta LifeGuard e prova
    recente antes de vincular. Manter recuperação/exclusão/alteração de senha coerentes.

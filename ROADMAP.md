@@ -19,6 +19,7 @@ Situação revisada em 09/10/2026. Relatos antigos devem ser reproduzidos no APK
 
 ### P1 — Fechar autenticação e segurança antes do hardware
 
+- [Etapa local concluída em 09/10] Verificador criptográfico Google e 23 testes novos (37/37 na suíte). Ainda sem rotas, vínculo de contas, telas ou implantação; continuidade em `docs/GOOGLE-LOGIN.md`.
 - Adicionar entrada e cadastro com Google usando OAuth/OIDC, vinculando com segurança contas que já usem o mesmo e-mail e preservando o tipo Paciente/Cuidador.
 - Configurar os clientes Android/Web no Google, validar assinatura do APK e definir o comportamento para conta Google sem tipo escolhido.
 - Fazer a rodada completa em dois celulares: cadastro, confirmação de e-mail, login, recuperação, sessões, vínculo, notificações, offline e exclusão de conta.
