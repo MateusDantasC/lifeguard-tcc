@@ -1,12 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Card from './Card';
 import PulseLine from './PulseLine';
-import BrandIcon from './BrandIcon';
+import LifeGuardIcon from './LifeGuardIcon';
 import { colors, fonts } from '../theme/theme';
 
 type Props = {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: 'heart-pulse' | 'thermometer';
   iconColor: string;
   value: string | number;
   unit: string;
@@ -14,7 +13,7 @@ type Props = {
   showPulse?: boolean;
 };
 
-export default function VitalCard({ icon, iconColor, value, unit, label, showPulse }: Props) {
+export default function VitalCard({ icon, value, unit, label, showPulse }: Props) {
   return (
     <Card accessible accessibilityLabel={`${label}: ${value} ${unit}`} style={styles.card}>
       {showPulse && (
@@ -22,8 +21,7 @@ export default function VitalCard({ icon, iconColor, value, unit, label, showPul
           <PulseLine variant="background" animated />
         </View>
       )}
-      {icon === 'heart-pulse' ? <BrandIcon name="heart" color={colors.inkSoft} /> :
-        <MaterialCommunityIcons accessible={false} name={icon} size={28} color={colors.inkSoft} />}
+      <LifeGuardIcon name={icon} />
       <Text style={styles.value}>
         {value} <Text style={styles.unit}>{unit}</Text>
       </Text>

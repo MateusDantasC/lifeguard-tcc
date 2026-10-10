@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert, Linking, ScrollView, View, Text, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
@@ -18,7 +17,7 @@ import { ApiError, formatDateTime } from '../../services/api';
 import InlineNotice from '../../components/InlineNotice';
 import EmptyState from '../../components/EmptyState';
 import LoadingState from '../../components/LoadingState';
-import BrandIcon from '../../components/BrandIcon';
+import LifeGuardIcon from '../../components/LifeGuardIcon';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeIdoso'>;
 
@@ -96,16 +95,14 @@ export default function HomeIdosoScreen({ navigation }: Props) {
         <View style={styles.grid}>
           {acessos.map((item) => (
             <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label} style={({ pressed }) => [styles.gridItem, pressed && styles.pressed]} onPress={item.onPress}>
-                {item.icon === 'account-group' ? <BrandIcon name="care" size={32} /> :
-                  item.icon === 'tune-variant' ? <BrandIcon name="shield" size={32} /> :
-                  <MaterialCommunityIcons accessible={false} name={item.icon} size={28} color={colors.inkSoft} />}
+                <LifeGuardIcon name={item.icon} size={30} />
                 <Text style={styles.gridLabel}>{item.label}</Text>
             </Pressable>
           ))}
         </View>
 
         <Pressable accessibilityRole="button" accessibilityLabel="Emergência, ligar para o SAMU" style={({ pressed }) => [styles.sos, pressed && styles.pressed]} onPress={handleSos}>
-          <BrandIcon name="heart" size={26} color={colors.white} />
+          <LifeGuardIcon name="sos" size={26} color={colors.white} />
           <Text style={styles.sosLabel}>Emergência (SOS)</Text>
         </Pressable>
       </ScrollView>

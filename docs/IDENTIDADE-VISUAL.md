@@ -22,8 +22,11 @@ Em 09/10/2026, elementos da página 3 foram extraídos para assets/brand/element
 pelo script scripts/extract-brand-elements.py. BrandIcon centraliza coração,
 cuidado e escudo. PulseLine utiliza o traçado original. SOS e ícones de sinais
 vitais usam #1976A8. Cores semânticas de erros e estados clínicos são preservadas.
-O PDF não contém termômetro, dispositivo ou gráfico de histórico; substituir
-esses ícones depende dos arquivos complementares da identidade visual.
+Por solicitação posterior, LifeGuardIcon fornece sete ícones vetoriais próprios,
+inspirados no traço arredondado da marca e nos símbolos funcionais anteriores.
+A home usa coração com pulso, termômetro, gráfico, dispositivos, pessoas,
+controles de limites e octógono SOS. Traço 1.7 em grade 24, azul #1976A8;
+SOS branco sobre azul. São desenhos do aplicativo, não extrações do PDF.
 
 A mudança de ícone e splash exige APK 1.8.0 (versionCode 11). Atualizações JS
 compatíveis posteriores podem seguir pelo EAS Update no runtime 1.8.0.
