@@ -1,6 +1,6 @@
 # Roadmap do LifeGuard
 
-Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionadas ao ESP32 e ao simulador ficam deliberadamente para o final.
+Este arquivo registra as próximas etapas do projeto. Por decisão do usuário em 11/10, o VISIT usará um simulador; ESP32 físico fica para depois.
 
 ## Próxima fila priorizada antes do ESP32
 
@@ -8,7 +8,8 @@ Situação revisada em 09/10/2026. Relatos antigos devem ser reproduzidos no APK
 
 ### Foco para 13/10 — atualização em 11/10
 
-- Priorizar caminho ESP32 → API → paciente/cuidador, sem depender de Google.
+- Priorizar demonstração sem hardware → API → paciente/cuidador, sem depender de Google.
+- Simulador no app implementado: normal, batimento alto e sem contato; identificação explícita nos painéis, histórico e push. Roteiro em `docs/DEMONSTRACAO-VISIT.md`.
 - Implementados provisionamento manual seguro, credencial revogável, ingestão com
   idempotência/relógio/qualidade, filtro de três amostras, fila de push para cuidadores
   e estado real de dispositivo no app. Contrato em `docs/ESP32-CONTRATO.md`.
