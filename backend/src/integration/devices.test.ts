@@ -100,6 +100,25 @@ test('ESP32: provisioning, isolation, deduplication, alarms, caregiver queue and
     });
     await prisma.reading.updateMany({ where: { deviceId: demo.data.dispositivo.id }, data: { timestamp: new Date(Date.now() - 1000) } });
     assert.equal((await request('/dispositivos/me/simular', 'POST', patient.token, { cenario: 'sem_contato' })).data.valida, false);
+    async function sendDemoSequence(cenario: 'normal' | 'alto') {
+      await prisma.reading.updateMany({ where: { deviceId: demo.data.dispositivo.id }, data: { timestamp: new Date(Date.now() - 100_000) } });
+      const created: bigint[] = [];
+      for (let i = 0; i < 3; i++) {
+        if (i === 1) await prisma.reading.update({ where: { id: created[0]! }, data: { timestamp: new Date(Date.now() - 5_000) } });
+        if (i === 2) {
+          await prisma.reading.update({ where: { id: created[0]! }, data: { timestamp: new Date(Date.now() - 10_000) } });
+          await prisma.reading.update({ where: { id: created[1]! }, data: { timestamp: new Date(Date.now() - 5_000) } });
+        }
+        const result = await request('/dispositivos/me/simular', 'POST', patient.token, { cenario });
+        assert.equal(result.status, 201);
+        created.push(BigInt(result.data.id));
+      }
+    }
+    await sendDemoSequence('normal');
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' }, status: 'RESOLVED' } }), 1);
+    await sendDemoSequence('alto');
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' } } }), 2, 'new simulation episode bypasses real-device cooldown');
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' }, resolvedAt: null } }), 1, 'only one active simulation alert');
     assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', caregiver.token)).data.idoso.simulado, true);
     assert.ok((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', patient.token)).data.leituras.some((item: { origem: string }) => item.origem === 'simulator'));
     clearRateLimitsForTests();

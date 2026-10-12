@@ -105,7 +105,7 @@ async function storeSample(candidate: { id: string; elderId: string }, sample: D
           await tx.alert.updateMany({ where: { elderId: device.elderId, type, message: sourceFilter, resolvedAt: null }, data: { resolvedAt: now, status: 'RESOLVED' } });
           continue;
         }
-        const existing = await tx.alert.findFirst({ where: { elderId: device.elderId, type, message: sourceFilter, OR: [{ resolvedAt: null }, { timestamp: { gte: new Date(now.getTime() - 600_000) } }] } });
+        const existing = await tx.alert.findFirst({ where: { elderId: device.elderId, type, message: sourceFilter, OR: device.isSimulator ? [{ resolvedAt: null }] : [{ resolvedAt: null }, { timestamp: { gte: new Date(now.getTime() - 600_000) } }] } });
         if (existing) continue;
         const value = type === 'HEART_RATE' ? reading.heartRate! : reading.temperature!;
         await tx.alert.create({ data: {

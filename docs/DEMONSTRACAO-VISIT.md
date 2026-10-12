@@ -13,7 +13,7 @@ Use uma conta de paciente de demonstração e outra de cuidador, vinculadas no a
 ## Limites importantes
 
 - O simulador pausa quando esta tela perde o foco ou o aplicativo vai para segundo plano. Uma requisição já enviada ainda pode terminar. Para demonstrar notificações, deixe o paciente nesta tela e use outro celular como cuidador.
-- Há no máximo um alerta aberto por tipo e intervalo mínimo de 10 minutos entre episódios do mesmo tipo. Não há disparos a cada leitura. Não altere a segurança para repetir a apresentação: ensaie com antecedência e respeite esse intervalo.
+- Há no máximo um alerta aberto por tipo. Para repetir a demonstração, volte ao cenário normal até 3 leituras resolverem o alerta, então escolha batimento alto novamente. O intervalo de 10 minutos continua aplicado aos dispositivos reais.
 - Para o cenário alto, o limite máximo de batimento precisa ser menor que 240 bpm. Use os limites padrão da conta de demonstração.
 - As leituras são persistidas como SIMULATOR; o histórico informa quando contém dados fictícios. Alertas de simulação e reais são separados na resolução e no intervalo mínimo.
 - A notificação usa a mesma infraestrutura da aplicação real. Isso demonstra o percurso completo app → API → banco → cuidador, mas não valida sensores, hardware ou precisão clínica.

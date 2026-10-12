@@ -80,7 +80,7 @@ export default function MeuDispositivoScreen({ navigation }: Props) {
           <Text style={styles.heading}>SIMULAÇÃO · dados fictícios</Text>
           <Text style={styles.text}>Envio a cada 5 segundos, somente nesta tela com o app aberto. Os cuidadores vinculados recebem os alertas identificados como demonstração. Pause para trocar o cenário.</Text>
           {(['normal', 'alto', 'sem_contato'] as const).map((value) => <AppButton key={value} label={`${scenario === value ? '✓ ' : ''}${value === 'normal' ? 'Dentro dos limites' : value === 'alto' ? 'Batimento acima do limite' : 'Sensor sem contato'}`} variant="secondary" disabled={running || busy} onPress={() => setScenario(value)} />)}
-          <Text style={styles.text}>{samples} leituras enviadas nesta execução. O alerta exige 3 leituras alteradas; há intervalo mínimo de 10 minutos entre alertas do mesmo tipo.</Text>
+          <Text style={styles.text}>{samples} leituras enviadas nesta execução. O alerta exige 3 leituras alteradas. Para repetir a demonstração, envie 3 leituras normais antes de voltar ao cenário alto.</Text>
           <AppButton label={running ? 'Pausar simulação' : 'Iniciar simulação'} disabled={busy} onPress={running ? stop : start} />
         </Card> : null}
         <InlineNotice message="Conexão indica comunicação recente com o servidor, não a precisão do sensor. Após 90 segundos sem sinal, o dispositivo aparece desconectado." />
