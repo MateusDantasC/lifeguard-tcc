@@ -78,6 +78,7 @@ export default function HistoricoScreen({ navigation, route }: Props) {
 
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void loadHistory(true)} tintColor={colors.coral} />}>
         {erro && (leituras.length > 0 || picos.length > 0) ? <InlineNotice tone="warning" message={erro} /> : null}
+        {leituras.some((item) => item.origem === 'simulator') ? <InlineNotice message="Este histórico inclui dados fictícios de simulação. Não use as médias para avaliação de saúde." /> : null}
         {loadState === 'loading' && leituras.length === 0 && picos.length === 0 ? <LoadingState message="Carregando histórico de saúde..." /> : loadState === 'error' && leituras.length === 0 && picos.length === 0 ? (
           <EmptyState icon="cloud-alert-outline" title="Histórico indisponível" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void loadHistory(); }} />
         ) : <>

@@ -63,6 +63,7 @@ function serializeReading(reading: {
   contactDetected: boolean;
   valid: boolean;
   invalidReason: string | null;
+  source: string;
 } | null) {
   if (!reading) return null;
   return {
@@ -74,6 +75,7 @@ function serializeReading(reading: {
     contatoDetectado: reading.contactDetected,
     valida: reading.valid,
     motivoInvalido: reading.invalidReason,
+    origem: reading.source.toLowerCase(),
   };
 }
 
@@ -114,6 +116,7 @@ monitoringRouter.get('/idosos', async (req, res) => {
       telefone: elder.phone,
       foto: elder.profilePhoto,
       status: classifyReading(latest, limits),
+      simulado: elder.devices[0]?.isSimulator ?? false,
       ultimaLeitura: serializeReading(latest),
     };
   });
@@ -155,6 +158,7 @@ monitoringRouter.get('/idosos/:idosoId', async (req, res) => {
           }
         : null,
       status: limits ? classifyReading(latest, limits) : 'sem_sinal',
+      simulado: elder.devices[0]?.isSimulator ?? false,
       ultimaLeitura: serializeReading(latest),
       limites: limits ? serializeLimits(limits) : null,
     },

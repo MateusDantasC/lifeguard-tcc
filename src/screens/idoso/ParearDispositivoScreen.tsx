@@ -13,7 +13,8 @@ import { apiRequest, ApiError, getApiUrl } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParearDispositivo'>;
 export default function ParearDispositivoScreen({ navigation }: Props) {
-  const [name, setName] = useState('Meu ESP32');
+  const [name, setName] = useState('Demonstração VISIT');
+  const [mode, setMode] = useState<'real' | 'simulador'>('simulador');
   const [credential, setCredential] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,22 +22,23 @@ export default function ParearDispositivoScreen({ navigation }: Props) {
     if (loading) return;
     setLoading(true); setError('');
     try {
-      const result = await apiRequest<{ credencial: string }>('/dispositivos/provisionar', { method: 'POST', body: JSON.stringify({ nome: name.trim() }) });
-      setCredential(result.credencial);
+      const result = await apiRequest<{ credencial: string | null }>('/dispositivos/provisionar', { method: 'POST', body: JSON.stringify({ nome: name.trim(), modo: mode }) });
+      if (mode === 'simulador') { navigation.goBack(); return; }
+      setCredential(result.credencial ?? '');
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Não foi possível preparar o dispositivo.'); }
     finally { setLoading(false); }
   }
   function confirm() {
     if (name.trim().length < 2) { setError('Informe um nome com pelo menos dois caracteres.'); return; }
-    Alert.alert('Preparar dispositivo?', 'Isso revoga o dispositivo anterior. A credencial será exibida uma única vez para você inserir no firmware do seu ESP32.', [
+    Alert.alert('Preparar dispositivo?', mode === 'simulador' ? 'Isso desativa o dispositivo anterior e permite enviar dados fictícios. Cuidadores vinculados poderão receber alertas de demonstração.' : 'Isso revoga o dispositivo anterior. A credencial será exibida uma única vez para você inserir no firmware do seu ESP32.', [
       { text: 'Cancelar', style: 'cancel' }, { text: 'Preparar', onPress: () => void provision() },
     ]);
   }
   return <SafeAreaView style={styles.safe} edges={['top']}>
-    <BackHeader title="Preparar ESP32" onBack={() => { if (!loading) navigation.goBack(); }} />
+    <BackHeader title="Preparar dispositivo" onBack={() => { if (!loading) navigation.goBack(); }} />
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <InlineNotice message="Esta etapa autoriza o envio ao servidor. Não conecta por Bluetooth nem grava o firmware automaticamente: a configuração inicial do ESP32 será feita no computador." />
+        <InlineNotice message={mode === 'simulador' ? 'Demonstração sem hardware. Os dados fictícios serão identificados no app e nos alertas.' : 'Esta etapa autoriza o envio ao servidor. Não conecta por Bluetooth nem grava o firmware automaticamente.'} />
         {credential ? <>
           <InlineNotice tone="warning" message="Guarde a credencial no arquivo local de configuração do firmware. Não envie por mensagem nem publique no GitHub. Ela não será mostrada novamente ao sair." />
           <Card><Text style={styles.label}>Credencial exclusiva</Text><Text selectable style={styles.secret}>{credential}</Text></Card>
@@ -44,9 +46,11 @@ export default function ParearDispositivoScreen({ navigation }: Props) {
           <Text style={styles.text}>No firmware: Authorization: Bearer seguido da credencial. O dispositivo só aparecerá conectado após enviar a primeira leitura.</Text>
           <AppButton label="Já guardei, concluir" onPress={() => navigation.goBack()} />
         </> : <>
+          <AppButton label={mode === 'simulador' ? '✓ Demonstração sem ESP32' : 'Usar demonstração'} variant="secondary" disabled={loading} onPress={() => { setMode('simulador'); setName('Demonstração VISIT'); }} />
+          <AppButton label={mode === 'real' ? '✓ ESP32 real' : 'Usar ESP32 real'} variant="secondary" disabled={loading} onPress={() => { setMode('real'); setName('Meu ESP32'); }} />
           <AppTextInput label="Nome do dispositivo" value={name} onChangeText={setName} maxLength={60} editable={!loading} required />
           {error ? <InlineNotice tone="warning" message={error} /> : null}
-          <AppButton label="Gerar credencial do ESP32" onPress={confirm} loading={loading} />
+          <AppButton label={mode === 'simulador' ? 'Preparar simulador' : 'Gerar credencial do ESP32'} onPress={confirm} loading={loading} />
         </>}
       </ScrollView>
     </KeyboardAvoidingView>

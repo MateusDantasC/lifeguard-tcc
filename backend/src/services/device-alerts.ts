@@ -21,7 +21,7 @@ export async function dispatchDeviceAlerts(send = sendPushToUsers) {
         where: { elderId: item.alert.elderId, status: 'ACTIVE' }, select: { caregiverId: true },
       });
       await send(links.map((link) => link.caregiverId), {
-        title: 'Alerta de saúde', body: item.alert.message,
+        title: item.alert.message.startsWith('[SIMULAÇÃO]') ? 'Demonstração LifeGuard' : 'Alerta de saúde', body: item.alert.message,
         data: { tipo: 'alerta', alertaId: item.alertId, pacienteId: item.alert.elderId },
       }, item.alertId, 'health_alert');
       await prisma.deviceAlertDispatch.update({ where: { id: item.id }, data: { sentAt: new Date() } });

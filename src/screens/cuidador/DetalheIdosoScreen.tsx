@@ -86,6 +86,7 @@ export default function DetalheIdosoScreen({ navigation, route }: Props) {
 
       <ScrollView contentContainerStyle={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} tintColor={colors.coral} />}>
         {erro && elder ? <InlineNotice tone="warning" message={erro} /> : null}
+        {elder?.simulado ? <InlineNotice message="SIMULAÇÃO · Os sinais deste paciente são fictícios, para demonstração." /> : null}
         {loadState === 'loading' && !elder ? <LoadingState message={`Carregando os dados de ${nome}...`} /> : loadState === 'error' && !elder ? (
           <EmptyState icon="cloud-alert-outline" title="Dados indisponíveis" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void refresh(true); }} />
         ) : <>

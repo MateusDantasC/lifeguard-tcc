@@ -77,6 +77,32 @@ test('ESP32: provisioning, isolation, deduplication, alarms, caregiver queue and
     assert.ok((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', patient.token)).data.leituras.length > 0, 'history is preserved after revocation');
     assert.equal((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', stranger.token)).status, 403);
     clearRateLimitsForTests();
+    assert.equal((await request('/dispositivos/me/simular', 'POST', caregiver.token, { cenario: 'normal' })).status, 403);
+    assert.equal((await request('/dispositivos/me/simular', 'POST', stranger.token, { cenario: 'normal' })).status, 409);
+    const demo = await request('/dispositivos/provisionar', 'POST', patient.token, { nome: 'VISIT', modo: 'simulador' });
+    assert.equal(demo.status, 201); assert.equal(demo.data.credencial, null);
+    assert.equal(demo.data.dispositivo.isSimulator, true);
+    assert.equal((await request('/dispositivos/me/simular', 'POST', patient.token, { cenario: 'alto', elderId: stranger.usuario.id })).status, 400);
+    for (let i = 0; i < 3; i++) {
+      // Shift earlier test samples only; avoid wall-clock sleeps in the suite.
+      await prisma.reading.updateMany({ where: { deviceId: demo.data.dispositivo.id }, data: { timestamp: new Date(Date.now() - (i === 1 ? 10_000 : 5_000)) } });
+      if (i === 2) {
+        const previous = await prisma.reading.findMany({ where: { deviceId: demo.data.dispositivo.id }, orderBy: { id: 'asc' } });
+        await prisma.reading.update({ where: { id: previous[0]!.id }, data: { timestamp: new Date(Date.now() - 10_000) } });
+      }
+      assert.equal((await request('/dispositivos/me/simular', 'POST', patient.token, { cenario: 'alto' })).status, 201);
+    }
+    assert.equal(await prisma.reading.count({ where: { deviceId: demo.data.dispositivo.id, source: 'SIMULATOR' } }), 3);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' } } }), 1);
+    await dispatchDeviceAlerts(async (users, message) => {
+      assert.deepEqual(users, [caregiver.usuario.id]);
+      assert.equal(message.title, 'Demonstração LifeGuard'); return users.length;
+    });
+    await prisma.reading.updateMany({ where: { deviceId: demo.data.dispositivo.id }, data: { timestamp: new Date(Date.now() - 1000) } });
+    assert.equal((await request('/dispositivos/me/simular', 'POST', patient.token, { cenario: 'sem_contato' })).data.valida, false);
+    assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', caregiver.token)).data.idoso.simulado, true);
+    assert.ok((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', patient.token)).data.leituras.some((item: { origem: string }) => item.origem === 'simulator'));
+    clearRateLimitsForTests();
     for (let i = 0; i < 30; i++) assert.equal((await request('/dispositivos/leituras', 'POST', undefined, first)).status, 401);
     assert.equal((await request('/dispositivos/leituras', 'POST', undefined, first)).status, 429);
   } finally {

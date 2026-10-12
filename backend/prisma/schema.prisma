@@ -186,6 +186,7 @@ model Device {
   pairedAt     DateTime            @default(now())
   lastSeenAt   DateTime?
   credentialHash String?
+  isSimulator Boolean @default(false)
   elder        User                @relation(fields: [elderId], references: [id], onDelete: Cascade)
   readings     Reading[]
   aggregates   AggregatedReading[]

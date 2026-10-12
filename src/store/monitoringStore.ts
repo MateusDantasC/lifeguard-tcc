@@ -7,6 +7,7 @@ export type Elder = {
   vinculoId?: string;
   nome: string;
   status: StatusKey;
+  simulado?: boolean;
   batimento: number | null;
   temperatura: number | null;
   telefone: string;

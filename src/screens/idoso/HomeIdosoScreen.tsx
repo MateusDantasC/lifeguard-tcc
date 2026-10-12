@@ -77,6 +77,7 @@ export default function HomeIdosoScreen({ navigation }: Props) {
         <HomeHeader title={`Olá, ${(user?.nome ?? 'Usuário').split(' ')[0]}`} subtitle="Seu cuidado está sendo acompanhado" photo={user?.foto} accountType="idoso" onProfile={() => navigation.navigate('Perfil')} />
 
         {erro && leitura ? <InlineNotice tone="warning" message={erro} /> : null}
+        {leitura?.simulado ? <InlineNotice message="SIMULAÇÃO · Os sinais exibidos são fictícios, para demonstração." /> : null}
 
         {loadState === 'loading' && !leitura ? <LoadingState message="Carregando seu monitoramento..." /> : loadState === 'error' && !leitura ? (
           <EmptyState icon="cloud-alert-outline" title="Monitoramento indisponível" message={erro} actionLabel="Tentar novamente" onAction={() => { setLoadState('loading'); void refresh(true); }} />
