@@ -1,0 +1,86 @@
+import assert from 'node:assert/strict';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { once } from 'node:events';
+import test from 'node:test';
+
+test('ESP32: provisioning, isolation, deduplication, alarms, caregiver queue and revocation', async () => {
+  assert.equal(process.env.NODE_ENV, 'test');
+  assert.match(new URL(process.env.DATABASE_URL ?? 'postgresql://localhost/missing').pathname, /_test$/);
+  process.env.SMTP_HOST = ''; process.env.SMTP_USER = ''; process.env.SMTP_PASSWORD = '';
+  const { app } = await import('../app.js');
+  const { prisma } = await import('../lib/prisma.js');
+  const { dispatchDeviceAlerts } = await import('../services/device-alerts.js');
+  const { clearRateLimitsForTests } = await import('../middleware/rate-limit.js');
+  const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const base = `http://127.0.0.1:${address.port}/api`;
+  const ids: string[] = [];
+  async function request(path: string, method = 'GET', token?: string, body?: object) {
+    const response = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    return { status: response.status, data: response.status === 204 ? null : await response.json() };
+  }
+  async function account(tipo: 'idoso' | 'cuidador') {
+    const result = await request('/auth/cadastro', 'POST', undefined, {
+      nome: 'Teste dispositivo', email: `${randomUUID()}@example.invalid`, senha: randomBytes(18).toString('hex') + 'aA1!',
+      telefone: '+5511999999999', genero: 'prefiro_nao_informar', tipo, aceitouTermos: true, aceitouPrivacidade: true,
+    });
+    assert.equal(result.status, 201); ids.push(result.data.usuario.id); return result.data;
+  }
+  try {
+    const patient = await account('idoso'); const caregiver = await account('cuidador'); const stranger = await account('idoso');
+    await prisma.caregiverElderLink.create({ data: { elderId: patient.usuario.id, caregiverId: caregiver.usuario.id } });
+    assert.equal((await request('/dispositivos/me')).status, 401);
+    assert.equal((await request('/dispositivos/provisionar', 'POST', caregiver.token, { nome: 'ESP32' })).status, 403);
+    assert.equal((await request('/dispositivos/me', 'GET', patient.token)).data.dispositivo, null);
+    const provision = await request('/dispositivos/provisionar', 'POST', patient.token, { nome: 'ESP32 teste' });
+    assert.equal(provision.status, 201);
+    const credential = provision.data.credencial as string;
+    const deviceId = provision.data.dispositivo.id;
+    const stored = await prisma.device.findUniqueOrThrow({ where: { id: deviceId } });
+    assert.notEqual(stored.credentialHash, credential.split('.')[1]);
+    const status = await request('/dispositivos/me', 'GET', patient.token);
+    assert.equal(status.data.dispositivo.conectado, false);
+    assert.ok(!JSON.stringify(status.data).includes('credentialHash'));
+    assert.equal((await request('/dispositivos/me', 'GET', stranger.token)).data.dispositivo, null);
+    let sequence = 0; const epoch = Date.now() - 100_000;
+    const sample = (heartRate = 75, contactDetected = true) => ({ sampleId: randomUUID(), timestamp: new Date(epoch + sequence++ * 5000).toISOString(), heartRate, temperature: 36.5, contactDetected, signalQuality: 'GOOD' });
+    const first = sample();
+    assert.equal((await request('/dispositivos/leituras', 'POST', patient.token, first)).status, 401);
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, { ...first, elderId: stranger.usuario.id })).status, 400);
+    const concurrent = await Promise.all([request('/dispositivos/leituras', 'POST', credential, first), request('/dispositivos/leituras', 'POST', credential, first)]);
+    assert.deepEqual(concurrent.map((r) => r.status).sort(), [200, 201]);
+    assert.equal(await prisma.reading.count({ where: { deviceId } }), 1);
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, { ...first, heartRate: 90 })).status, 409);
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, { ...sample(), timestamp: '2000-01-01T00:00:00.000Z' })).data.codigo, 'INVALID_SAMPLE_TIME');
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, { ...sample(), timestamp: first.timestamp })).data.codigo, 'OUT_OF_ORDER_SAMPLE');
+    const noContact = await request('/dispositivos/leituras', 'POST', credential, sample(220, false));
+    assert.equal(noContact.status, 201); assert.equal(noContact.data.valida, false);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id } }), 0);
+    for (let i = 0; i < 3; i++) assert.equal((await request('/dispositivos/leituras', 'POST', credential, sample(140))).status, 201);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id } }), 1);
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, sample(140))).status, 201);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id } }), 1);
+    const recipients: string[][] = [];
+    await dispatchDeviceAlerts(async (userIds) => { recipients.push(userIds); return userIds.length; });
+    await dispatchDeviceAlerts(async () => { assert.fail('Queue must not resend a completed job'); });
+    assert.deepEqual(recipients, [[caregiver.usuario.id]]);
+    for (let i = 0; i < 3; i++) assert.equal((await request('/dispositivos/leituras', 'POST', credential, sample())).status, 201);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, status: 'RESOLVED' } }), 1);
+    for (let i = 0; i < 3; i++) assert.equal((await request('/dispositivos/leituras', 'POST', credential, sample(140))).status, 201);
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id } }), 1, 'cooldown blocks another episode within 10min');
+    assert.equal((await request('/dispositivos/me', 'GET', patient.token)).data.dispositivo.conectado, true);
+    const replacement = await request('/dispositivos/provisionar', 'POST', patient.token, { nome: 'Substituto' });
+    assert.equal(replacement.status, 201);
+    assert.equal((await request('/dispositivos/leituras', 'POST', credential, first)).status, 401);
+    assert.equal((await request('/dispositivos/me', 'DELETE', patient.token)).status, 204);
+    assert.equal((await request('/dispositivos/leituras', 'POST', replacement.data.credencial, first)).status, 401);
+    assert.ok((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', patient.token)).data.leituras.length > 0, 'history is preserved after revocation');
+    assert.equal((await request(`/idosos/${patient.usuario.id}/leituras`, 'GET', stranger.token)).status, 403);
+    clearRateLimitsForTests();
+    for (let i = 0; i < 30; i++) assert.equal((await request('/dispositivos/leituras', 'POST', undefined, first)).status, 401);
+    assert.equal((await request('/dispositivos/leituras', 'POST', undefined, first)).status, 429);
+  } finally {
+    await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    await new Promise<void>((resolve) => server.close(() => resolve())); await prisma.$disconnect();
+  }
+});

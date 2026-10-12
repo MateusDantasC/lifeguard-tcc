@@ -167,7 +167,7 @@ monitoringRouter.get('/idosos/:idosoId/leituras', async (req, res) => {
   await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
 
   const readings = await prisma.reading.findMany({
-    where: { device: { elderId, active: true } },
+    where: { device: { elderId } },
     orderBy: { timestamp: 'desc' },
     take: query.limite,
   });

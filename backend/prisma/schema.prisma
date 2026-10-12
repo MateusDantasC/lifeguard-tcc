@@ -185,6 +185,7 @@ model Device {
   active       Boolean             @default(true)
   pairedAt     DateTime            @default(now())
   lastSeenAt   DateTime?
+  credentialHash String?
   elder        User                @relation(fields: [elderId], references: [id], onDelete: Cascade)
   readings     Reading[]
   aggregates   AggregatedReading[]
@@ -203,9 +204,12 @@ model Reading {
   contactDetected Boolean       @default(true)
   valid           Boolean       @default(true)
   invalidReason   String?
+  sampleId        String?       @db.Uuid
+  payloadHash     String?
   device          Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 
   @@index([deviceId, timestamp(sort: Desc)])
+  @@unique([deviceId, sampleId])
   @@index([timestamp])
 }
 
@@ -251,9 +255,21 @@ model Alert {
   resolvedAt    DateTime?
   elder         User               @relation(fields: [elderId], references: [id], onDelete: Cascade)
   notifications NotificationSent[]
+  deviceDispatch DeviceAlertDispatch?
 
   @@index([elderId, timestamp(sort: Desc)])
   @@index([status, timestamp(sort: Desc)])
+}
+
+model DeviceAlertDispatch {
+  id        String    @id @default(uuid()) @db.Uuid
+  alertId   String    @unique @db.Uuid
+  attempts  Int       @default(0)
+  nextAt    DateTime  @default(now())
+  sentAt    DateTime?
+  alert     Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([sentAt, nextAt])
 }
 
 model NotificationSent {

@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth.js';
 import { linksRouter } from './routes/links.js';
 import { monitoringRouter } from './routes/monitoring.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { devicesRouter } from './routes/devices.js';
 import { prisma } from './lib/prisma.js';
 import { requestLogging } from './middleware/request-logging.js';
 import { createRateLimit } from './middleware/rate-limit.js';
@@ -56,6 +57,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/vinculos', linksRouter);
 app.use('/api/notificacoes', notificationsRouter);
+app.use('/api/dispositivos', devicesRouter);
 app.use('/api', monitoringRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);

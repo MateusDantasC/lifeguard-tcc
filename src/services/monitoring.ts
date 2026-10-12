@@ -62,8 +62,8 @@ export function mapElder(elder: ApiElder): Elder {
     genero: elder.genero,
     perfilIdoso: elder.perfilIdoso,
     status: elder.status,
-    batimento: elder.ultimaLeitura?.valida ? elder.ultimaLeitura.batimento : null,
-    temperatura: elder.ultimaLeitura?.valida ? elder.ultimaLeitura.temperatura : null,
+    batimento: elder.status !== 'sem_sinal' && elder.ultimaLeitura?.valida ? elder.ultimaLeitura.batimento : null,
+    temperatura: elder.status !== 'sem_sinal' && elder.ultimaLeitura?.valida ? elder.ultimaLeitura.temperatura : null,
     ultimaAtualizacao: formatRelativeTime(elder.ultimaLeitura?.horario),
   };
 }

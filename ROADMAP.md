@@ -6,6 +6,16 @@ Este arquivo registra as próximas etapas do projeto. Funcionalidades relacionad
 
 Situação revisada em 09/10/2026. Relatos antigos devem ser reproduzidos no APK atual antes de alterar o código.
 
+### Foco para 13/10 — atualização em 11/10
+
+- Priorizar caminho ESP32 → API → paciente/cuidador, sem depender de Google.
+- Implementados provisionamento manual seguro, credencial revogável, ingestão com
+  idempotência/relógio/qualidade, filtro de três amostras, fila de push para cuidadores
+  e estado real de dispositivo no app. Contrato em `docs/ESP32-CONTRATO.md`.
+- Ainda validar integração/CI, aplicar migration e implantar API, publicar OTA e
+  testar dois celulares. Não declarar hardware pronto antes desses testes.
+- Google segue com verificador pronto; rotas/vínculo/telas e APK nativo pendentes.
+
 - [Implementado em 09/10; conferir nos aparelhos] Histórico compartilhado entre paciente e cuidador mede a largura interna do cartão; cabeçalho quebra linha e rótulos do gráfico se adaptam ao espaço. Média descreve as leituras exibidas (a API retorna as últimas 100, não necessariamente 24 horas).
 - [Configuração Google concluída em 09/10; implementação pendente] Certificado do APK registrado no Firebase e clientes OAuth Android/Web criados em modo de teste. Identificadores públicos e roteiro em `docs/GOOGLE-LOGIN.md`. Próximo: integrar app/API com vínculo seguro por subject; módulo nativo exigirá novo APK-base. Não vincular contas existentes automaticamente apenas por coincidência de e-mail.
 
