@@ -12,6 +12,8 @@ Use uma conta de paciente de demonstração e outra de cuidador, vinculadas no a
 
 ## Limites importantes
 
+- Marcar um alerta como resolvido não significa que o sinal normalizou. Enquanto as leituras continuarem alteradas, não é criado outro alerta do mesmo episódio; retorne a três leituras normais antes de repetir.
+
 - O simulador pausa quando esta tela perde o foco ou o aplicativo vai para segundo plano. Uma requisição já enviada ainda pode terminar. Para demonstrar notificações, deixe o paciente nesta tela e use outro celular como cuidador.
 - Há no máximo um alerta aberto por tipo. Para repetir a demonstração, volte ao cenário normal até 3 leituras resolverem o alerta, então escolha batimento alto novamente. O intervalo de 10 minutos continua aplicado aos dispositivos reais.
 - Para o cenário alto, o limite máximo de batimento precisa ser menor que 240 bpm. Use os limites padrão da conta de demonstração.

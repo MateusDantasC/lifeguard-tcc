@@ -1,5 +1,7 @@
 # Roadmap do LifeGuard
 
+Estado mais recente das correções pós-VISIT, testes e implantação: [retomada de 18/10](docs/RETOMADA-2026-10-18.md). As listas históricas abaixo não comprovam implantação atual.
+
 Este arquivo registra as próximas etapas do projeto. Por decisão do usuário em 11/10, o VISIT usará um simulador; ESP32 físico fica para depois.
 
 ## Próxima fila priorizada antes do ESP32

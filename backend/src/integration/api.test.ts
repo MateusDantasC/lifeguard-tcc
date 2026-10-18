@@ -56,9 +56,10 @@ test('contas, vínculos, isolamento de pacientes e revogação em banco de teste
     const loser = results[0].status === 201 ? stranger : caregiver;
     const link = results.find((r) => r.status === 201)!.data.vinculo;
     assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', winner.token)).status, 200);
+    assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', winner.token)).data.idoso.vinculoId, link.id, 'patient detail preserves the link needed for removal');
     assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', loser.token)).status, 403);
     assert.equal((await request(`/vinculos/${link.id}`, 'DELETE', loser.token)).status, 403);
-    assert.equal((await request(`/vinculos/${link.id}`, 'DELETE', patient.token)).status, 204);
+    assert.equal((await request(`/vinculos/${link.id}`, 'DELETE', winner.token)).status, 204);
     assert.equal((await request(`/idosos/${patient.usuario.id}`, 'GET', winner.token)).status, 403);
     assert.equal((await request(`/idosos/${patient.usuario.id}/limites`, 'PUT', patient.token, {})).status, 403);
     const second = await request('/auth/login', 'POST', undefined, { email: patient.email, senha });

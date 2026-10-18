@@ -90,7 +90,7 @@ export default function LoginScreen({ navigation, route }: Props) {
             onChangeText={(value) => { setSenha(value); setErro(''); }}
             editable={!loading}
             secureTextEntry={!mostrarSenha}
-            rightIcon={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+            rightIcon={mostrarSenha ? 'eye-outline' : 'eye-off-outline'}
             rightIconLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
             onRightIconPress={() => setMostrarSenha((value) => !value)}
             autoComplete="password"

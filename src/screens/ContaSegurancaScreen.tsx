@@ -208,7 +208,7 @@ export default function ContaSegurancaScreen({ navigation }: Props) {
   }
 
   const busy = changingPassword || deleting || revokingSessions || sendingVerification || confirmingVerification || exportingData;
-  const passwordIcon = mostrarSenhas ? 'eye-off-outline' : 'eye-outline';
+  const passwordIcon = mostrarSenhas ? 'eye-outline' : 'eye-off-outline';
   const passwordIconLabel = mostrarSenhas ? 'Ocultar senhas' : 'Mostrar senhas';
 
   return (

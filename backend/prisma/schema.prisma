@@ -254,6 +254,7 @@ model Alert {
   timestamp     DateTime           @default(now())
   status        AlertStatus        @default(NEW)
   resolvedAt    DateTime?
+  signalRecoveredAt DateTime?
   elder         User               @relation(fields: [elderId], references: [id], onDelete: Cascade)
   notifications NotificationSent[]
   deviceDispatch DeviceAlertDispatch?

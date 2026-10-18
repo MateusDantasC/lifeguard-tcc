@@ -114,6 +114,14 @@ test('ESP32: provisioning, isolation, deduplication, alarms, caregiver queue and
         created.push(BigInt(result.data.id));
       }
     }
+    const activeDemoAlert = await prisma.alert.findFirstOrThrow({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' } } });
+    assert.equal((await request('/alertas', 'GET', caregiver.token)).data.alertas.find((item: { id: string }) => item.id === activeDemoAlert.id).status, 'novo');
+    const resolution = await request(`/alertas/${activeDemoAlert.id}`, 'PATCH', caregiver.token, { status: 'resolvido' });
+    assert.equal(resolution.status, 200);
+    assert.equal(resolution.data.alerta.status, 'resolvido');
+    assert.equal((await request('/alertas', 'GET', caregiver.token)).data.alertas.find((item: { id: string }) => item.id === activeDemoAlert.id).status, 'resolvido', 'resolved alerts stay resolved when refreshed');
+    await sendDemoSequence('alto');
+    assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' } } }), 1, 'manual resolution must not rearm a continuously high signal');
     await sendDemoSequence('normal');
     assert.equal(await prisma.alert.count({ where: { elderId: patient.usuario.id, message: { startsWith: '[SIMULAÇÃO]' }, status: 'RESOLVED' } }), 1);
     await sendDemoSequence('alto');

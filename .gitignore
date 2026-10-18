@@ -37,6 +37,7 @@ yarn-error.*
 .env*.local
 .secrets/
 /.tools/
+/.playwright-cli/
 /credentials.json
 /credentials/
 inst_user_settings.tmp

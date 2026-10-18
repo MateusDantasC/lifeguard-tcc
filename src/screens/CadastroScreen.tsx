@@ -133,7 +133,7 @@ export default function CadastroScreen({ navigation, route }: Props) {
             onChangeText={(value) => { setSenha(value); setErro(''); }}
             editable={!loading}
             secureTextEntry={!mostrarSenha}
-            rightIcon={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+            rightIcon={mostrarSenha ? 'eye-outline' : 'eye-off-outline'}
             rightIconLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
             onRightIconPress={() => setMostrarSenha((value) => !value)}
             autoComplete="new-password"
@@ -148,7 +148,7 @@ export default function CadastroScreen({ navigation, route }: Props) {
             onChangeText={(value) => { setConfirmarSenha(value); setErro(''); }}
             editable={!loading}
             secureTextEntry={!mostrarConfirmacao}
-            rightIcon={mostrarConfirmacao ? 'eye-off-outline' : 'eye-outline'}
+            rightIcon={mostrarConfirmacao ? 'eye-outline' : 'eye-off-outline'}
             rightIconLabel={mostrarConfirmacao ? 'Ocultar confirmação da senha' : 'Mostrar confirmação da senha'}
             onRightIconPress={() => setMostrarConfirmacao((value) => !value)}
             placeholder="Repita sua senha"

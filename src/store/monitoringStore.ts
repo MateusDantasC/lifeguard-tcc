@@ -74,7 +74,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   setElders: (elders) => set({ elders }),
   upsertElder: (elder) => set((state) => {
     const current = state.elders.find((item) => item.id === elder.id);
-    return { elders: [...state.elders.filter((item) => item.id !== elder.id), { ...current, ...elder }] };
+    return { elders: [...state.elders.filter((item) => item.id !== elder.id), { ...current, ...elder, vinculoId: elder.vinculoId ?? current?.vinculoId }] };
   }),
   removeElder: (elderId) => set((state) => ({ elders: state.elders.filter((elder) => elder.id !== elderId) })),
   setCaregivers: (caregivers) => set({ caregivers }),

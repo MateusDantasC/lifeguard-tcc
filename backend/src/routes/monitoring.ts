@@ -8,6 +8,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { serializeElderProfile, serializeGender } from '../serializers.js';
 
 const idSchema = z.uuid();
+const alertStatusLabels = { NEW: 'novo', SEEN: 'visto', RESOLVED: 'resolvido' } as const;
 const limitsSchema = z.object({
   batimentoMin: z.number().int().min(30).max(150),
   batimentoMax: z.number().int().min(50).max(240),
@@ -31,7 +32,7 @@ async function assertElderAccess(userId: string, userType: UserType, elderId: st
       where: { caregiverId: userId, elderId, status: LinkStatus.ACTIVE },
       select: { id: true },
     });
-    if (link) return;
+    if (link) return link.id;
   }
   throw new HttpError(403, 'Você não possui acesso a este paciente.', 'ELDER_ACCESS_DENIED');
 }
@@ -126,7 +127,7 @@ monitoringRouter.get('/idosos', async (req, res) => {
 
 monitoringRouter.get('/idosos/:idosoId', async (req, res) => {
   const elderId = idSchema.parse(req.params.idosoId);
-  await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
+  const linkId = await assertElderAccess(req.auth!.userId, req.auth!.type, elderId);
   const elder = await prisma.user.findFirst({
     where: { id: elderId, type: UserType.ELDER },
     include: {
@@ -146,6 +147,7 @@ monitoringRouter.get('/idosos/:idosoId', async (req, res) => {
   res.json({
     idoso: {
       id: elder.id,
+      vinculoId: linkId,
       nome: elder.name,
       telefone: elder.phone,
       foto: elder.profilePhoto,
@@ -288,7 +290,7 @@ monitoringRouter.get('/alertas', async (req, res) => {
       valor: alert.measuredValue,
       mensagem: alert.message,
       horario: alert.timestamp,
-      status: alert.status.toLowerCase(),
+      status: alertStatusLabels[alert.status],
     })),
   });
 });
@@ -307,5 +309,5 @@ monitoringRouter.patch('/alertas/:alertaId', async (req, res) => {
       resolvedAt: input.status === 'resolvido' ? new Date() : null,
     },
   });
-  res.json({ alerta: { id: updated.id, status: updated.status.toLowerCase() } });
+  res.json({ alerta: { id: updated.id, status: alertStatusLabels[updated.status] } });
 });

@@ -236,7 +236,7 @@ export default function PerfilScreen({ navigation }: Props) {
                 value={senhaAtualEmail}
                 onChangeText={(value) => { setSenhaAtualEmail(value); setError(''); }}
                 secureTextEntry={!mostrarSenhaEmail}
-                rightIcon={mostrarSenhaEmail ? 'eye-off-outline' : 'eye-outline'}
+                rightIcon={mostrarSenhaEmail ? 'eye-outline' : 'eye-off-outline'}
                 rightIconLabel={mostrarSenhaEmail ? 'Ocultar senha' : 'Mostrar senha'}
                 onRightIconPress={() => setMostrarSenhaEmail((value) => !value)}
                 autoCapitalize="none"
@@ -266,7 +266,7 @@ export default function PerfilScreen({ navigation }: Props) {
             <Text style={styles.sectionHelper}>Esses dados ficam disponíveis somente para você e seus cuidadores vinculados.</Text>
             <Card style={styles.card}>{editing ? <>
               <View style={styles.inlineFields}>
-              <AppTextInput label="Data de nascimento" value={dataNascimento} onChangeText={setDataNascimento} placeholder="DD/MM/AAAA" keyboardType="number-pad" editable={!loading} maxLength={10} containerStyle={styles.flexField} />
+              <AppTextInput label="Data de nascimento" value={dataNascimento} onChangeText={(value) => setDataNascimento(value.replace(/\D/g, '').slice(0, 8).replace(/^(\d{2})(\d)/, '$1/$2').replace(/^(\d{2}\/\d{2})(\d)/, '$1/$2'))} placeholder="DD/MM/AAAA" keyboardType="number-pad" editable={!loading} maxLength={10} containerStyle={styles.flexField} />
               <AppTextInput label="Tipo sanguíneo" value={tipoSanguineo} onChangeText={setTipoSanguineo} placeholder="Ex.: O+" autoCapitalize="characters" editable={!loading} maxLength={5} containerStyle={styles.bloodField} />
               </View>
               <AppTextInput label="Condições médicas" value={condicoesMedicas} onChangeText={setCondicoesMedicas} placeholder="Ex.: hipertensão, diabetes" multiline textAlignVertical="top" style={styles.multiline} editable={!loading} maxLength={1000} />
